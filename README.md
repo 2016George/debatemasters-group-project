@@ -1,6 +1,6 @@
 ## Overview
 
-This is an online debate plaform that allows users of any age to practice and have fun with debate online! You can debate with AI and surprise yourself with a random debate topic and debate opponent！
+This is an online debate plaform that allows users of any age to practice and have fun with debate online! You can debate with AI and surprise yourself with a random debate topic and debate opponent！HAVE FUN!
 
 ## Getting Started
 
