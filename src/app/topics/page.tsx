@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -11,8 +11,14 @@ import {
   pickRandomTopicFromPool,
   type SoloTopicAreaId,
 } from "@/lib/debate/solo-area-topic-pools";
+import { WSDA_PHASES, formatMmSs } from "@/lib/debate/wsda-schedule";
 import { getMockTopics } from "@/lib/data/repository";
 import { getAgeBandPreference } from "@/lib/data/profile-storage";
+
+const wsdaTotalSeconds = WSDA_PHASES.reduce(
+  (sum, phase) => sum + phase.durationSec,
+  0,
+);
 
 function TopicIcon({ name, className }: { name: string; className?: string }) {
   return <MaterialIcon name={name} className={className} />;
@@ -24,10 +30,6 @@ const topicCardGoShadow =
 export default function TopicsPage() {
   const topics = useMemo(() => getMockTopics(), []);
   const [soloRole, setSoloRole] = useState<"pro" | "con">("pro");
-  const [soloDurationMinutes, setSoloDurationMinutes] = useState<
-    1 | 3 | 5 | 10 | 15
-  >(5);
-  const durationOptions: Array<1 | 3 | 5 | 10 | 15> = [1, 3, 5, 10, 15];
 
   const [soloTopicLines, setSoloTopicLines] = useState<Partial<Record<string, string>>>(
     {},
@@ -101,27 +103,27 @@ export default function TopicsPage() {
                 </div>
                 <div>
                   <p className="mb-3 font-headline-pixel text-[8px] font-bold uppercase tracking-widest text-stone-300">
-                    Time
+                    Format — WSDA
                   </p>
-                  <div className="inline-flex flex-wrap border-4 border-black bg-stone-950 p-1">
-                    {durationOptions.map((minutes) => {
-                      const selected = soloDurationMinutes === minutes;
-                      return (
-                        <button
-                          key={minutes}
-                          type="button"
-                          onClick={() => setSoloDurationMinutes(minutes)}
-                          className={`px-4 py-2 font-headline-pixel text-[10px] font-black uppercase transition-all ${
-                            selected
-                              ? "bg-primary text-white shadow-[0px_3px_0px_0px_#085300]"
-                              : "bg-stone-800 text-stone-300 hover:bg-stone-700"
-                          }`}
-                        >
-                          {minutes} mins
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <p className="mb-3 font-headline-pixel text-[9px] font-bold leading-relaxed text-stone-400">
+                    Structured 10-phase round ({formatMmSs(wsdaTotalSeconds)} total).
+                    Phases advance automatically with timed speaking segments.
+                  </p>
+                  <ol className="max-h-48 space-y-1 overflow-y-auto border-2 border-stone-800 bg-stone-950/80 p-3">
+                    {WSDA_PHASES.map((phase, index) => (
+                      <li
+                        key={`${index}-${phase.label}`}
+                        className="flex items-baseline justify-between gap-3 font-headline-pixel text-[8px] font-bold text-stone-300"
+                      >
+                        <span className="min-w-0 flex-1 leading-snug">
+                          {index + 1}. {phase.label}
+                        </span>
+                        <span className="shrink-0 tabular-nums text-orange-400">
+                          {formatMmSs(phase.durationSec)}
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
                 </div>
               </div>
             </section>
@@ -131,7 +133,7 @@ export default function TopicsPage() {
                 const line = soloTopicLines[t.id];
                 const debateHref =
                   soloTopicsReady && line
-                    ? `/debate?topic=custom&title=${encodeURIComponent(line)}&role=${soloRole}&duration=${soloDurationMinutes}`
+                    ? `/debate?topic=custom&title=${encodeURIComponent(line)}&role=${soloRole}&format=wsda`
                     : null;
 
                 const inner = (
@@ -235,11 +237,7 @@ export default function TopicsPage() {
                 >
                   <input type="hidden" name="topic" value="custom" />
                   <input type="hidden" name="role" value={soloRole} />
-                  <input
-                    type="hidden"
-                    name="duration"
-                    value={soloDurationMinutes}
-                  />
+                  <input type="hidden" name="format" value="wsda" />
                   <div className="group flex-1">
                     <input
                       name="title"

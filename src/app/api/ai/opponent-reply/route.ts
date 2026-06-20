@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import type { AgeBand, DebateTranscriptEntry } from "@/lib/data/types";
 import { generateOpponentReply } from "@/lib/llm/tasks";
 
@@ -8,7 +8,28 @@ type OpponentReplyBody = {
   userRole?: unknown;
   ageBand?: unknown;
   transcript?: unknown;
+  debateFormat?: unknown;
+  phaseIndex?: unknown;
+  phaseLabel?: unknown;
+  phasePurpose?: unknown;
+  crossExTurn?: unknown;
 };
+
+function normalizeDebateFormat(value: unknown): "wsda" | "free_form" | undefined {
+  if (value === "wsda" || value === "free_form") return value;
+  return undefined;
+}
+
+function normalizeCrossExTurn(value: unknown): "ask" | "answer" | undefined {
+  return value === "ask" || value === "answer" ? value : undefined;
+}
+
+function normalizePhaseIndex(value: unknown): number | undefined {
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0) {
+    return undefined;
+  }
+  return value;
+}
 
 function normalizeAgeBand(value: unknown): AgeBand {
   return value === "under10" ||
@@ -46,6 +67,13 @@ export async function POST(request: Request) {
     const userRole = body.userRole === "con" ? "con" : "pro";
     const ageBand = normalizeAgeBand(body.ageBand);
     const transcript = normalizeTranscript(body.transcript);
+    const debateFormat = normalizeDebateFormat(body.debateFormat);
+    const phaseIndex = normalizePhaseIndex(body.phaseIndex);
+    const phaseLabel =
+      typeof body.phaseLabel === "string" ? body.phaseLabel.trim() : undefined;
+    const phasePurpose =
+      typeof body.phasePurpose === "string" ? body.phasePurpose.trim() : undefined;
+    const crossExTurn = normalizeCrossExTurn(body.crossExTurn);
 
     if (!topicTitle) {
       return NextResponse.json(
@@ -60,6 +88,11 @@ export async function POST(request: Request) {
       userRole,
       ageBand,
       transcript,
+      debateFormat,
+      phaseIndex,
+      phaseLabel,
+      phasePurpose,
+      crossExTurn,
     });
 
     return NextResponse.json({

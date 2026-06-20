@@ -1,4 +1,4 @@
-﻿import type { AgeBand } from "@/lib/data/types";
+import type { AgeBand } from "@/lib/data/types";
 
 /** Age-banded fallback topics used when AI generation is unavailable. */
 export const AGE_BAND_FALLBACK_TOPICS: Record<AgeBand, readonly string[]> = {
@@ -61,9 +61,29 @@ function normalizeAgeBand(ageBand: AgeBand | undefined): AgeBand {
     : "10-14";
 }
 
+/** Turn a plain topic line into a WSDA resolution (idempotent if already prefixed). */
+export function formatWsdaResolution(rawTopic: string): string {
+  const trimmed = rawTopic.trim();
+  if (!trimmed) return "This house believes debate matters.";
+  if (/^this house believes\b/i.test(trimmed)) {
+    return trimmed.endsWith(".") ? trimmed : `${trimmed}.`;
+  }
+
+  if (trimmed.endsWith("?") && /^should\s+/i.test(trimmed)) {
+    const rest = trimmed.slice(0, -1).replace(/^should\s+/i, "").trim();
+    if (!/\bshould\b/i.test(rest)) {
+      return `This house believes that ${rest} should be the case.`;
+    }
+    return `This house believes that ${rest}.`;
+  }
+
+  const body = trimmed.replace(/\?+$/, "").trim();
+  return `This house believes ${body}.`;
+}
+
 function renderTopicForFormat(baseTopic: string, format: "wsda" | "free_form"): string {
   if (format === "wsda") {
-    return `This house believes ${baseTopic}.`;
+    return formatWsdaResolution(baseTopic);
   }
   return `Should we support ${baseTopic}?`;
 }

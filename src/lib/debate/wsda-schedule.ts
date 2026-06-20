@@ -1,4 +1,4 @@
-﻿/** WSDA-style round structure (ClassResources/docs/wsda_rules.md). */
+/** WSDA-style round structure (ClassResources/docs/wsda_rules.md). */
 
 /** Who may speak or type in this segment; `none` = prep (silence, no typing). */
 export type WsdaActiveSpeaker = "pro" | "con" | "both" | "none";
@@ -74,14 +74,14 @@ export const WSDA_PHASES: WsdaPhase[] = [
     systemBehavior: "Neither side can type or send text.",
   },
   {
-    label: "Pro Rebuttal",
+    label: "Pro Conclusion Speech",
     purpose: "Explain reasons that you win the round",
     durationSec: 120,
     activeSpeaker: "pro",
     systemBehavior: "Pro can type and send text; Con cannot.",
   },
   {
-    label: "Con Rebuttal",
+    label: "Con Conclusion Speech",
     purpose: "Explain reasons that you win the round",
     durationSec: 120,
     activeSpeaker: "con",
@@ -162,6 +162,15 @@ export function wsdaRoundTransitionMessage(completedPhaseIndex: number): string 
   );
 }
 
+/** Keep a single cross-ex question when the model returns multiple. */
+export function normalizeSingleCrossExQuestion(text: string): string {
+  const trimmed = text.trim();
+  if (!trimmed) return "Can you clarify your main warrant?";
+  const chunks = trimmed.split(/(?<=[?.!])\s+/);
+  const withQuestion = chunks.find((part) => part.includes("?"));
+  const chosen = (withQuestion ?? chunks[0] ?? trimmed).trim();
+  return chosen.endsWith("?") ? chosen : `${chosen.replace(/[.!]+$/, "")}?`;
+}
 /** Pro constructive: definitions, framework, impacts — no ad hominem (WSDA). */
 export function proConstructiveOpening(topicTitle: string): string {
   return (

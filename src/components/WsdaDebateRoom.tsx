@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useMemo } from "react";
 import { DebateChatPanel } from "@/components/DebateChatPanel";
@@ -16,13 +16,24 @@ export function WsdaDebateRoom() {
     secondsLeft,
   } = useWsdaDebate();
 
-  const simulateConOpponent = useMemo(
+  const opponentRole = session.userRole === "pro" ? "con" : "pro";
+  const opponentLeadsCrossEx =
+    activeSpeaker === "both" &&
+    ((phaseIndex === 1 && opponentRole === "con") ||
+      (phaseIndex === 3 && opponentRole === "pro"));
+  const opponentSpeaksAlone = activeSpeaker === opponentRole;
+
+  const simulateSoloOpponent = useMemo(
     () =>
       !session.arenaRoomId &&
-      session.userRole === "pro" &&
-      activeSpeaker === "con" &&
-      !isComplete,
-    [session.arenaRoomId, session.userRole, activeSpeaker, isComplete],
+      !isComplete &&
+      (opponentSpeaksAlone || opponentLeadsCrossEx),
+    [
+      session.arenaRoomId,
+      isComplete,
+      opponentSpeaksAlone,
+      opponentLeadsCrossEx,
+    ],
   );
 
   return (
@@ -38,7 +49,7 @@ export function WsdaDebateRoom() {
       inputDisabledHint={inputHint}
       secondsLeft={secondsLeft}
       roundComplete={isComplete}
-      simulateConOpponent={simulateConOpponent}
+      simulateSoloOpponent={simulateSoloOpponent}
       arenaRoomId={session.arenaRoomId}
       selfAvatarUrl={session.selfAvatarUrl}
       opponentAvatarUrl={session.opponentAvatarUrl}

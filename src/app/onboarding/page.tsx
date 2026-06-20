@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -87,8 +87,9 @@ export default function OnboardingPage() {
                       Solo Path
                     </h2>
                     <p className="mt-2 text-sm leading-relaxed text-[#b8b8b8]">
-                      Perfect your logic against our AI mentors. No pressure, just
-                      pure construction of ideas.
+                      Practice a full WSDA round against an AI opponent — 10 timed
+                      phases from constructive speeches through cross-examination,
+                      rebuttals, and conclusion speeches (~16 minutes).
                     </p>
                   </div>
                   <div className="pt-4">

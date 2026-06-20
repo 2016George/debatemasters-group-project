@@ -1,7 +1,7 @@
-﻿import "server-only";
+import "server-only";
 import { getLlmConfig } from "@/lib/llm/env";
 import { resolveLlmTask } from "@/lib/llm/provider-registry";
-import type { AgeBand, DebateTranscriptEntry } from "@/lib/data/types";
+import { WSDA_PHASES } from "@/lib/debate/wsda-schedule";
 
 const MAX_OPPONENT_TRANSCRIPT_ITEMS = 36;
 
@@ -11,6 +11,12 @@ export type OpponentReplyRequest = {
   userRole?: "pro" | "con";
   ageBand?: AgeBand;
   transcript: DebateTranscriptEntry[];
+  debateFormat?: "wsda" | "free_form";
+  phaseIndex?: number;
+  phaseLabel?: string;
+  phasePurpose?: string;
+  /** Cross-ex only: whether the opponent is asking or answering. */
+  crossExTurn?: "ask" | "answer";
 };
 
 export type JudgeDebateRequest = {
@@ -58,6 +64,61 @@ function clampText(value: string, maxLen: number): string {
   const v = value.trim();
   if (v.length <= maxLen) return v;
   return `${v.slice(0, maxLen - 3)}...`;
+}
+
+/** Drop a trailing incomplete sentence when the model hits its token limit. */
+function trimIncompleteTrailingSentence(text: string): string {
+  const trimmed = text.trim();
+  if (!trimmed || /[.!?]["']?$/.test(trimmed)) return trimmed;
+  const boundaries = [...trimmed.matchAll(/[.!?](?:\s+|$)/g)];
+  if (boundaries.length === 0) return trimmed;
+  const last = boundaries[boundaries.length - 1];
+  if (!last || last.index === undefined) return trimmed;
+  const cut = trimmed.slice(0, last.index + 1).trim();
+  return cut.length >= trimmed.length * 0.45 ? cut : trimmed;
+}
+
+function opponentSideLabel(userRole: "pro" | "con" | undefined): "Pro" | "Con" {
+  return userRole === "con" ? "Pro" : "Con";
+}
+
+function opponentOutputLimits(input: OpponentReplyRequest): {
+  maxTokens: number;
+  maxChars: number;
+  trimIncomplete: boolean;
+} {
+  const phaseIndex = input.phaseIndex;
+  if (input.debateFormat !== "wsda" || phaseIndex === undefined) {
+    return { maxTokens: 260, maxChars: 700, trimIncomplete: false };
+  }
+  if (phaseIndex === 0 || phaseIndex === 2) {
+    return { maxTokens: 560, maxChars: 1200, trimIncomplete: true };
+  }
+  if (phaseIndex === 5 || phaseIndex === 6) {
+    return { maxTokens: 420, maxChars: 950, trimIncomplete: true };
+  }
+  if (phaseIndex === 8 || phaseIndex === 9) {
+    return { maxTokens: 360, maxChars: 800, trimIncomplete: true };
+  }
+  if (phaseIndex === 1 || phaseIndex === 3) {
+    if (input.crossExTurn === "ask") {
+      return { maxTokens: 100, maxChars: 280, trimIncomplete: false };
+    }
+    if (input.crossExTurn === "answer") {
+      return { maxTokens: 200, maxChars: 450, trimIncomplete: false };
+    }
+    return { maxTokens: 180, maxChars: 400, trimIncomplete: false };
+  }
+  return { maxTokens: 260, maxChars: 700, trimIncomplete: false };
+}
+
+function finalizeOpponentReply(text: string, input: OpponentReplyRequest): string {
+  const limits = opponentOutputLimits(input);
+  let value = text.trim();
+  if (limits.trimIncomplete) {
+    value = trimIncompleteTrailingSentence(value);
+  }
+  return clampText(value, limits.maxChars);
 }
 
 function renderTranscript(
@@ -144,41 +205,176 @@ async function waitMs(ms: number): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function opponentSystemPrompt(input: OpponentReplyRequest): string {
+  const phaseIndex = input.phaseIndex;
+  if (input.debateFormat !== "wsda" || phaseIndex === undefined) {
+    return "You are an in-character debate opponent. Reply with exactly one short argument paragraph (2-4 sentences), no markdown, no bullet points, no prefacing.";
+  }
+
+  if (phaseIndex === 1 || phaseIndex === 3) {
+    if (input.crossExTurn === "ask") {
+      return "You are in a WSDA cross-examination segment and you are asking questions. Output exactly ONE concise question (one sentence ending with ?). No preamble, no second question, no markdown, no bullet points.";
+    }
+    if (input.crossExTurn === "answer") {
+      return (
+        "You are in a WSDA cross-examination segment and you are answering the other side's question. " +
+        "Stay strictly on YOUR assigned side of the resolution — never argue for the other side or adopt their claims. " +
+        "If the question challenges your case, rebut or reframe from your side's framework; do not concede. " +
+        "Give ONE direct answer (1-3 sentences). No speeches, no markdown, no bullet points."
+      );
+    }
+    return "You are in a WSDA cross-examination segment. Ask ONE sharp, concise question (1-2 sentences) that tests the other side's logic, definitions, or evidence — or give ONE direct answer if responding to their question. No long speeches, no markdown, no bullet points.";
+  }
+
+  if (phaseIndex === 0 || phaseIndex === 2) {
+    return (
+      "You are delivering a NEW WSDA constructive speech. This is NOT cross-examination. " +
+      "Do NOT ask questions, greet the audience, or reply to the last cross-ex answer. " +
+      "Present definitions, framework, and impacts in one complete paragraph (4-6 sentences). " +
+      "Finish every sentence — do not trail off mid-thought. " +
+      "Stay on the resolution, avoid ad hominem, no markdown, no bullet points."
+    );
+  }
+
+  if (phaseIndex === 5 || phaseIndex === 6) {
+    return (
+      "You are in a WSDA rebuttal. Directly refute specific arguments the opponent made in their constructive " +
+      "and in cross-examination — name or paraphrase their claims, then attack them. " +
+      "Use one paragraph (3-5 sentences). Do not ask questions or introduce a full new constructive case. " +
+      "No markdown, no bullet points."
+    );
+  }
+
+  if (phaseIndex === 8 || phaseIndex === 9) {
+    return "You are in a WSDA conclusion speech. Crystallize why your side wins the round in one paragraph (2-4 sentences). No markdown, no bullet points.";
+  }
+
+  return "You are an in-character debate opponent in a WSDA round. Reply with exactly one short paragraph (2-4 sentences), no markdown, no bullet points, no prefacing.";
+}
+
+function wsdaOpponentTaskInstruction(input: OpponentReplyRequest): string {
+  const phaseIndex = input.phaseIndex;
+  const userRole = input.userRole === "con" ? "con" : "pro";
+  const opponentSide = opponentSideLabel(input.userRole);
+  const userSide = userRole === "pro" ? "Pro" : "Con";
+  if (phaseIndex === undefined) {
+    return "Provide the next persuasive response based on the transcript.";
+  }
+
+  if (phaseIndex === 1 || phaseIndex === 3) {
+    if (input.crossExTurn === "ask") {
+      return "Ask exactly ONE question based on the transcript above. Output only that question.";
+    }
+    if (input.crossExTurn === "answer") {
+      return (
+        `Answer the opponent's most recent cross-ex question in 1-3 sentences as side ${opponentSide} on this resolution. ` +
+        `You must defend ${opponentSide}'s case only — do NOT argue for ${userSide} or praise the other side's position. ` +
+        `If the question implies ${userSide} is right, rebut or reframe from ${opponentSide}'s constructive.`
+      );
+    }
+    return "Provide the next cross-examination question or answer as appropriate.";
+  }
+
+  if (phaseIndex === 0 || phaseIndex === 2) {
+    return (
+      "Deliver your constructive speech NOW. This is a new segment — do not ask questions, greet the audience, or continue cross-ex. " +
+      "Give a standalone case (definitions, framework, impacts) in 4-6 complete sentences using the transcript only to know what the other side argued."
+    );
+  }
+
+  if (phaseIndex === 5 || phaseIndex === 6) {
+    if (userRole === "pro") {
+      return (
+        `Rebut the Pro side's arguments from "${WSDA_PHASES[0]?.label ?? "Pro Constructive"}" ` +
+        `(definitions, framework, impacts) AND their key claims from ` +
+        `"${WSDA_PHASES[1]?.label ?? "Con Cross-Examination of the Pro"}". ` +
+        "Paraphrase what you are refuting before attacking it."
+      );
+    }
+    return (
+      `Rebut the Con side's arguments from "${WSDA_PHASES[2]?.label ?? "Con Constructive"}" ` +
+      `(definitions, framework, impacts) AND their key claims from ` +
+      `"${WSDA_PHASES[3]?.label ?? "Pro Cross-Examination of the Con"}". ` +
+      "Paraphrase what you are refuting before attacking it."
+    );
+  }
+
+  if (phaseIndex === 8 || phaseIndex === 9) {
+    return "Deliver your conclusion speech: crystallize why your side wins the round.";
+  }
+
+  return "Provide the next persuasive response based on the transcript.";
+}
+
+function opponentUserPrompt(input: OpponentReplyRequest): string {
+  const userSide = input.userRole === "con" ? "Con" : "Pro";
+  const opponentSide = userSide === "Pro" ? "Con" : "Pro";
+  const parts = [
+    `Topic: ${input.topicTitle}`,
+    `You are ${input.opponentName}, side ${opponentSide}.`,
+    `The user is side ${userSide}.`,
+    ageBandToneGuide(input.ageBand),
+  ];
+
+  if (
+    input.debateFormat === "wsda" &&
+    input.phaseIndex !== undefined &&
+    input.phaseLabel
+  ) {
+    parts.push(
+      `Current WSDA segment: ${input.phaseLabel}${input.phasePurpose ? ` — ${input.phasePurpose}` : ""}.`,
+    );
+  }
+
+  if (
+    input.debateFormat === "wsda" &&
+    input.crossExTurn === "answer"
+  ) {
+    parts.push(
+      `Resolution reminder: you are side ${opponentSide} on "${input.topicTitle}". ` +
+        `Answer only from ${opponentSide}'s perspective — never argue for ${userSide}.`,
+    );
+  }
+
+  parts.push(
+    input.debateFormat === "wsda" && input.phaseIndex !== undefined
+      ? wsdaOpponentTaskInstruction(input)
+      : "Continue from the transcript and provide the next persuasive response:",
+    "",
+    "Transcript so far:",
+    renderTranscript(input.transcript, {
+      maxItems: MAX_OPPONENT_TRANSCRIPT_ITEMS,
+    }),
+  );
+
+  return parts.join("\n\n");
+}
+
 export async function generateOpponentReply(
   input: OpponentReplyRequest,
 ): Promise<string> {
   const { provider, model } = resolveLlmTask("opponent");
-  const userSide = input.userRole === "con" ? "Con" : "Pro";
-  const opponentSide = userSide === "Pro" ? "Con" : "Pro";
   const messages = [
     {
       role: "system" as const,
-      content:
-        "You are an in-character debate opponent. Reply with exactly one short argument paragraph (2-4 sentences), no markdown, no bullet points, no prefacing.",
+      content: opponentSystemPrompt(input),
     },
     {
       role: "user" as const,
-      content: [
-        `Topic: ${input.topicTitle}`,
-        `You are ${input.opponentName}, side ${opponentSide}.`,
-        `The user is side ${userSide}.`,
-        ageBandToneGuide(input.ageBand),
-        "Continue from the transcript and provide the next persuasive response:",
-        renderTranscript(input.transcript, {
-          maxItems: MAX_OPPONENT_TRANSCRIPT_ITEMS,
-        }),
-      ].join("\n\n"),
+      content: opponentUserPrompt(input),
     },
   ];
+
+  const maxTokens = opponentOutputLimits(input).maxTokens;
 
   try {
     const response = await provider.generate({
       model,
       temperature: 0.8,
-      maxTokens: 260,
+      maxTokens,
       messages,
     });
-    return clampText(response.text, 700);
+    return finalizeOpponentReply(response.text, input);
   } catch (primaryError) {
     const cfg = getLlmConfig();
     // If custom opponent model fails, retry once with DeepSeek's stable default chat model.
@@ -186,10 +382,10 @@ export async function generateOpponentReply(
       const retry = await provider.generate({
         model: "deepseek-chat",
         temperature: 0.8,
-        maxTokens: 260,
+        maxTokens,
         messages,
       });
-      return clampText(retry.text, 700);
+      return finalizeOpponentReply(retry.text, input);
     }
     throw primaryError;
   }

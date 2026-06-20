@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Data access layer — swap implementations when moving from mock → Supabase + Vercel.
  *
  * 1. Install `@supabase/supabase-js`.
@@ -11,6 +11,7 @@ import {
   mockTopics,
   mockUser,
 } from "./mock/fixtures";
+import { formatWsdaResolution } from "../debate/random-match-topics";
 import { WSDA_PHASES, formatMmSs, wsdaPhaseBanner } from "../debate/wsda-schedule";
 import type {
   DebateResult,
@@ -40,16 +41,6 @@ function parseRequestedRole(
   return undefined;
 }
 
-function parseRequestedSoloDurationSeconds(
-  durationMinutes: string | null | undefined,
-): number | undefined {
-  const value = Number.parseInt(durationMinutes?.trim() ?? "", 10);
-  if (value === 1 || value === 3 || value === 5 || value === 10 || value === 15) {
-    return value * 60;
-  }
-  return undefined;
-}
-
 function buildWsdaSession(
   topicTitle: string,
   preferredRole?: "pro" | "con",
@@ -60,8 +51,8 @@ function buildWsdaSession(
   return {
     ...mockDebateSession,
     id: `debate_wsda_${Date.now()}`,
-    topicTitle,
-    locationLabel: "WSDA Arena — Matched round",
+    topicTitle: formatWsdaResolution(topicTitle),
+    locationLabel: "Solo Path — WSDA",
     phaseLabel: wsdaPhaseBanner(0),
     timerMmSs: first ? formatMmSs(first.durationSec) : "02:00",
     phaseDurationSeconds: first?.durationSec ?? 120,
@@ -83,7 +74,30 @@ export function getMockDebateSession(): DebateSession {
   return mockDebateSession;
 }
 
-/** Resolves mock debate session with the topic chosen on `/topics` (or custom title). */
+/** Resolves solo WSDA debate session from `/topics` (or custom title). */
+export function getDebateSessionForTopic(
+  topicId: string | null | undefined,
+  customTitle: string | null | undefined,
+  _format: string | null | undefined,
+  requestedRole?: string | null | undefined,
+): DebateSession {
+  const base: DebateSession = { ...mockDebateSession };
+  const id = topicId?.trim();
+  const selectedRole = parseRequestedRole(requestedRole);
+
+  let rawTitle = base.topicTitle;
+  if (id === "custom") {
+    rawTitle = customTitle?.trim() || "Custom topic";
+  } else if (id) {
+    const topic = mockTopics.find((t) => t.id === id);
+    if (topic) {
+      rawTitle = topic.description;
+    }
+  }
+
+  return buildWsdaSession(rawTitle, selectedRole);
+}
+
 /** Live arena room from DB — topic + opponent resolved server-side. */
 export function buildArenaDebateSession(input: {
   roomId: string;
@@ -116,76 +130,6 @@ export function buildArenaDebateSession(input: {
     userRole: input.userRole,
     selfAvatarUrl: input.selfAvatarUrl,
     opponentAvatarUrl: input.opponentAvatarUrl,
-  };
-}
-
-export function getDebateSessionForTopic(
-  topicId: string | null | undefined,
-  customTitle: string | null | undefined,
-  format: string | null | undefined,
-  requestedRole?: string | null | undefined,
-  requestedDurationMinutes?: string | null | undefined,
-): DebateSession {
-  const base: DebateSession = { ...mockDebateSession };
-  const id = topicId?.trim();
-  const isWsda = format?.trim().toLowerCase() === "wsda";
-  const selectedRole = parseRequestedRole(requestedRole);
-  const selectedSoloDurationSeconds = parseRequestedSoloDurationSeconds(
-    requestedDurationMinutes,
-  );
-
-  if (id === "custom") {
-    const t = customTitle?.trim();
-    const title = t || "Custom topic";
-    if (isWsda) {
-      return buildWsdaSession(title, selectedRole);
-    }
-    return {
-      ...base,
-      topicTitle: title,
-      timerMmSs: selectedSoloDurationSeconds
-        ? formatMmSs(selectedSoloDurationSeconds)
-        : base.timerMmSs,
-      soloDurationSeconds: selectedSoloDurationSeconds,
-      userRole: selectedRole ?? base.userRole,
-    };
-  }
-
-  if (!id) {
-    return {
-      ...base,
-      timerMmSs: selectedSoloDurationSeconds
-        ? formatMmSs(selectedSoloDurationSeconds)
-        : base.timerMmSs,
-      soloDurationSeconds: selectedSoloDurationSeconds,
-      userRole: selectedRole ?? base.userRole,
-    };
-  }
-
-  const topic = mockTopics.find((t) => t.id === id);
-  if (!topic) {
-    return {
-      ...base,
-      timerMmSs: selectedSoloDurationSeconds
-        ? formatMmSs(selectedSoloDurationSeconds)
-        : base.timerMmSs,
-      soloDurationSeconds: selectedSoloDurationSeconds,
-      userRole: selectedRole ?? base.userRole,
-    };
-  }
-
-  if (isWsda) {
-    return buildWsdaSession(topic.description, selectedRole);
-  }
-
-  return {
-    ...base,
-    topicTitle: topic.description,
-    timerMmSs: selectedSoloDurationSeconds
-      ? formatMmSs(selectedSoloDurationSeconds)
-      : base.timerMmSs,
-    soloDurationSeconds: selectedSoloDurationSeconds,
-    userRole: selectedRole ?? base.userRole,
   };
 }
 
