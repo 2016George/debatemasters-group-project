@@ -621,11 +621,10 @@ export function DebateChatPanel({
     };
 
     if (opponentSpeaksAlone) {
-      if (soloPhaseSpeechRef.current.has(phaseIndex)) {
-        return;
-      }
-      soloPhaseSpeechRef.current.add(phaseIndex);
       const timeoutId = window.setTimeout(() => {
+        if (cancelled) return;
+        if (soloPhaseSpeechRef.current.has(phaseIndex)) return;
+        soloPhaseSpeechRef.current.add(phaseIndex);
         void runWithFallback(phaseIndex);
       }, 1200);
       return () => {
@@ -636,11 +635,10 @@ export function DebateChatPanel({
     }
 
     if (opponentLeadsCrossEx) {
-      if (crossExInitializedRef.current.has(phaseIndex)) {
-        return;
-      }
-      crossExInitializedRef.current.add(phaseIndex);
       const timeoutId = window.setTimeout(() => {
+        if (cancelled) return;
+        if (crossExInitializedRef.current.has(phaseIndex)) return;
+        crossExInitializedRef.current.add(phaseIndex);
         void runWithFallback(phaseIndex, "ask");
       }, 2000);
       return () => {

@@ -68,8 +68,8 @@ const checks = [
     name: "Phase-aware opponent API fields",
     ok:
       read("src/app/api/ai/opponent-reply/route.ts").includes("phaseIndex") &&
-      read("src/lib/llm/tasks.ts").includes("opponentSystemPrompt"),
-    detail: "LLM + route",
+      read("src/lib/llm/tasks.ts").includes("buildWsdaOpponentSystemPrompt"),
+    detail: "LLM + route + docx prompts",
   },
   {
     name: "Prep phases lock typing (userMaySpeak none)",

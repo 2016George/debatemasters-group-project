@@ -1,7 +1,12 @@
 import "server-only";
+import type { AgeBand, DebateTranscriptEntry } from "@/lib/data/types";
 import { getLlmConfig } from "@/lib/llm/env";
 import { resolveLlmTask } from "@/lib/llm/provider-registry";
 import { WSDA_PHASES } from "@/lib/debate/wsda-schedule";
+import {
+  buildWsdaOpponentSystemPrompt,
+  wsdaRoundSessionNumber,
+} from "@/lib/llm/wsda-opponent-prompts";
 
 const MAX_OPPONENT_TRANSCRIPT_ITEMS = 36;
 
@@ -84,32 +89,33 @@ function opponentSideLabel(userRole: "pro" | "con" | undefined): "Pro" | "Con" {
 
 function opponentOutputLimits(input: OpponentReplyRequest): {
   maxTokens: number;
+  /** 0 = no character clamp (full model output). */
   maxChars: number;
   trimIncomplete: boolean;
 } {
   const phaseIndex = input.phaseIndex;
   if (input.debateFormat !== "wsda" || phaseIndex === undefined) {
-    return { maxTokens: 260, maxChars: 700, trimIncomplete: false };
+    return { maxTokens: 600, maxChars: 0, trimIncomplete: false };
   }
   if (phaseIndex === 0 || phaseIndex === 2) {
-    return { maxTokens: 560, maxChars: 1200, trimIncomplete: true };
+    return { maxTokens: 1400, maxChars: 0, trimIncomplete: false };
   }
   if (phaseIndex === 5 || phaseIndex === 6) {
-    return { maxTokens: 420, maxChars: 950, trimIncomplete: true };
+    return { maxTokens: 1000, maxChars: 0, trimIncomplete: false };
   }
   if (phaseIndex === 8 || phaseIndex === 9) {
-    return { maxTokens: 360, maxChars: 800, trimIncomplete: true };
+    return { maxTokens: 900, maxChars: 0, trimIncomplete: false };
   }
   if (phaseIndex === 1 || phaseIndex === 3) {
     if (input.crossExTurn === "ask") {
-      return { maxTokens: 100, maxChars: 280, trimIncomplete: false };
+      return { maxTokens: 120, maxChars: 320, trimIncomplete: false };
     }
     if (input.crossExTurn === "answer") {
-      return { maxTokens: 200, maxChars: 450, trimIncomplete: false };
+      return { maxTokens: 280, maxChars: 0, trimIncomplete: false };
     }
-    return { maxTokens: 180, maxChars: 400, trimIncomplete: false };
+    return { maxTokens: 200, maxChars: 450, trimIncomplete: false };
   }
-  return { maxTokens: 260, maxChars: 700, trimIncomplete: false };
+  return { maxTokens: 600, maxChars: 0, trimIncomplete: false };
 }
 
 function finalizeOpponentReply(text: string, input: OpponentReplyRequest): string {
@@ -118,7 +124,10 @@ function finalizeOpponentReply(text: string, input: OpponentReplyRequest): strin
   if (limits.trimIncomplete) {
     value = trimIncompleteTrailingSentence(value);
   }
-  return clampText(value, limits.maxChars);
+  if (limits.maxChars > 0) {
+    return clampText(value, limits.maxChars);
+  }
+  return value;
 }
 
 function renderTranscript(
@@ -211,52 +220,16 @@ function opponentSystemPrompt(input: OpponentReplyRequest): string {
     return "You are an in-character debate opponent. Reply with exactly one short argument paragraph (2-4 sentences), no markdown, no bullet points, no prefacing.";
   }
 
-  if (phaseIndex === 1 || phaseIndex === 3) {
-    if (input.crossExTurn === "ask") {
-      return "You are in a WSDA cross-examination segment and you are asking questions. Output exactly ONE concise question (one sentence ending with ?). No preamble, no second question, no markdown, no bullet points.";
-    }
-    if (input.crossExTurn === "answer") {
-      return (
-        "You are in a WSDA cross-examination segment and you are answering the other side's question. " +
-        "Stay strictly on YOUR assigned side of the resolution — never argue for the other side or adopt their claims. " +
-        "If the question challenges your case, rebut or reframe from your side's framework; do not concede. " +
-        "Give ONE direct answer (1-3 sentences). No speeches, no markdown, no bullet points."
-      );
-    }
-    return "You are in a WSDA cross-examination segment. Ask ONE sharp, concise question (1-2 sentences) that tests the other side's logic, definitions, or evidence — or give ONE direct answer if responding to their question. No long speeches, no markdown, no bullet points.";
-  }
-
-  if (phaseIndex === 0 || phaseIndex === 2) {
-    return (
-      "You are delivering a NEW WSDA constructive speech. This is NOT cross-examination. " +
-      "Do NOT ask questions, greet the audience, or reply to the last cross-ex answer. " +
-      "Present definitions, framework, and impacts in one complete paragraph (4-6 sentences). " +
-      "Finish every sentence — do not trail off mid-thought. " +
-      "Stay on the resolution, avoid ad hominem, no markdown, no bullet points."
-    );
-  }
-
-  if (phaseIndex === 5 || phaseIndex === 6) {
-    return (
-      "You are in a WSDA rebuttal. Directly refute specific arguments the opponent made in their constructive " +
-      "and in cross-examination — name or paraphrase their claims, then attack them. " +
-      "Use one paragraph (3-5 sentences). Do not ask questions or introduce a full new constructive case. " +
-      "No markdown, no bullet points."
-    );
-  }
-
-  if (phaseIndex === 8 || phaseIndex === 9) {
-    return "You are in a WSDA conclusion speech. Crystallize why your side wins the round in one paragraph (2-4 sentences). No markdown, no bullet points.";
-  }
-
-  return "You are an in-character debate opponent in a WSDA round. Reply with exactly one short paragraph (2-4 sentences), no markdown, no bullet points, no prefacing.";
+  return buildWsdaOpponentSystemPrompt({
+    phaseIndex,
+    crossExTurn: input.crossExTurn,
+    opponentSide: opponentSideLabel(input.userRole),
+  });
 }
 
 function wsdaOpponentTaskInstruction(input: OpponentReplyRequest): string {
   const phaseIndex = input.phaseIndex;
   const userRole = input.userRole === "con" ? "con" : "pro";
-  const opponentSide = opponentSideLabel(input.userRole);
-  const userSide = userRole === "pro" ? "Pro" : "Con";
   if (phaseIndex === undefined) {
     return "Provide the next persuasive response based on the transcript.";
   }
@@ -266,41 +239,30 @@ function wsdaOpponentTaskInstruction(input: OpponentReplyRequest): string {
       return "Ask exactly ONE question based on the transcript above. Output only that question.";
     }
     if (input.crossExTurn === "answer") {
-      return (
-        `Answer the opponent's most recent cross-ex question in 1-3 sentences as side ${opponentSide} on this resolution. ` +
-        `You must defend ${opponentSide}'s case only — do NOT argue for ${userSide} or praise the other side's position. ` +
-        `If the question implies ${userSide} is right, rebut or reframe from ${opponentSide}'s constructive.`
-      );
+      return "Answer the opponent's most recent cross-ex question now, using the transcript above.";
     }
     return "Provide the next cross-examination question or answer as appropriate.";
   }
 
   if (phaseIndex === 0 || phaseIndex === 2) {
-    return (
-      "Deliver your constructive speech NOW. This is a new segment — do not ask questions, greet the audience, or continue cross-ex. " +
-      "Give a standalone case (definitions, framework, impacts) in 4-6 complete sentences using the transcript only to know what the other side argued."
-    );
+    return "Deliver your constructive speech now, using the transcript above to respond to what the other side has argued.";
   }
 
   if (phaseIndex === 5 || phaseIndex === 6) {
     if (userRole === "pro") {
       return (
-        `Rebut the Pro side's arguments from "${WSDA_PHASES[0]?.label ?? "Pro Constructive"}" ` +
-        `(definitions, framework, impacts) AND their key claims from ` +
-        `"${WSDA_PHASES[1]?.label ?? "Con Cross-Examination of the Pro"}". ` +
-        "Paraphrase what you are refuting before attacking it."
+        `Rebut arguments from "${WSDA_PHASES[0]?.label ?? "Pro Constructive"}" and ` +
+        `"${WSDA_PHASES[1]?.label ?? "Con Cross-Examination of the Pro"}" using the transcript above.`
       );
     }
     return (
-      `Rebut the Con side's arguments from "${WSDA_PHASES[2]?.label ?? "Con Constructive"}" ` +
-      `(definitions, framework, impacts) AND their key claims from ` +
-      `"${WSDA_PHASES[3]?.label ?? "Pro Cross-Examination of the Con"}". ` +
-      "Paraphrase what you are refuting before attacking it."
+      `Rebut arguments from "${WSDA_PHASES[2]?.label ?? "Con Constructive"}" and ` +
+      `"${WSDA_PHASES[3]?.label ?? "Pro Cross-Examination of the Con"}" using the transcript above.`
     );
   }
 
   if (phaseIndex === 8 || phaseIndex === 9) {
-    return "Deliver your conclusion speech: crystallize why your side wins the round.";
+    return "Deliver your conclusion speech now, using the full transcript above.";
   }
 
   return "Provide the next persuasive response based on the transcript.";
@@ -321,8 +283,9 @@ function opponentUserPrompt(input: OpponentReplyRequest): string {
     input.phaseIndex !== undefined &&
     input.phaseLabel
   ) {
+    const sessionNumber = wsdaRoundSessionNumber(input.phaseIndex);
     parts.push(
-      `Current WSDA segment: ${input.phaseLabel}${input.phasePurpose ? ` — ${input.phasePurpose}` : ""}.`,
+      `Current WSDA Session ${sessionNumber}/10: ${input.phaseLabel}${input.phasePurpose ? ` — ${input.phasePurpose}` : ""}.`,
     );
   }
 
