@@ -226,6 +226,32 @@
   letter-spacing: -0.05em;
 }
 
+/* Debate chat — readable body text; pixel font stays on chrome via .font-headline-pixel */
+.debate-chat-panel {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
+.debate-chat-body {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.65;
+}
+
+@media (min-width: 768px) {
+  .debate-chat-body {
+    font-size: 1rem;
+  }
+}
+
+.debate-chat-label {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+
 .debate-room-pixel-bg {
   background-image: url("/onboarding-nether-bg.png");
   background-size: cover;

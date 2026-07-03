@@ -67,12 +67,12 @@ export function OpponentExitNoticeModal({
         role="alertdialog"
         aria-modal="true"
         aria-label="Opponent exited the debate"
-        className="w-full max-w-md border-4 border-red-900 bg-[#1a0505] p-4 shadow-[8px_8px_0px_0px_rgba(0,0,0,0.8)] md:p-5"
+        className="w-full max-w-md border-4 border-red-900 bg-[#1a0505] p-4 shadow-[8px_8px_0px_0px_rgba(0,0,0,0.8)] md:p-5 font-headline-pixel"
       >
         <p className="pixel-text-xs font-black uppercase tracking-wide text-orange-500">
           Opponent exited
         </p>
-        <p className="pixel-text-xs mt-3 leading-relaxed text-stone-200 normal-case">
+        <p className="debate-chat-body mt-3 text-stone-200 normal-case">
           {opponentName} has ended the debate and left the room. You win this round by
           forfeit. Press OK to open your debate summary.
         </p>

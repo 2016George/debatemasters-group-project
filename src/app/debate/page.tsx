@@ -66,7 +66,7 @@ export default async function DebatePage({ searchParams }: DebatePageProps) {
   const isArenaFreeForm = Boolean(session.arenaRoomId) && session.debateFormat === "free_form";
 
   return (
-    <div className="debate-room-pixel-bg font-headline-pixel text-on-surface">
+    <div className="debate-room-pixel-bg text-on-surface">
       <div className="nether-overlay-room" />
       <NetherSidebarShell
         sidebar={
@@ -86,7 +86,7 @@ export default async function DebatePage({ searchParams }: DebatePageProps) {
           {isArenaFreeForm ? (
             <FreeFormArenaProvider session={session}>
               <>
-                <header className="relative w-full overflow-hidden border-b-8 border-orange-600 bg-red-950">
+                <header className="relative w-full overflow-hidden border-b-8 border-orange-600 bg-red-950 font-headline-pixel">
                   <div className="relative h-[10.5rem] w-full sm:h-44 md:h-48">
                     <img
                       alt=""
@@ -122,7 +122,7 @@ export default async function DebatePage({ searchParams }: DebatePageProps) {
                 </header>
 
                 <div className="relative z-10 grid flex-1 grid-cols-12 gap-0">
-                  <section className="col-span-12 border-r-4 border-red-950 bg-[#2a0808]/90 p-6 backdrop-blur-sm lg:col-span-3">
+                  <section className="col-span-12 border-r-4 border-red-950 bg-[#2a0808]/90 p-6 backdrop-blur-sm font-headline-pixel lg:col-span-3">
                     <h2 className="pixel-text-base mb-8 flex items-center gap-2 font-black uppercase text-red-100">
                       <MaterialIcon name="menu_book" className="text-orange-500" />
                       Arena Free Form
@@ -166,7 +166,7 @@ export default async function DebatePage({ searchParams }: DebatePageProps) {
                     />
                   </section>
 
-                  <section className="col-span-12 space-y-10 bg-[#2a0808]/90 p-6 backdrop-blur-sm lg:col-span-3">
+                  <section className="col-span-12 space-y-10 bg-[#2a0808]/90 p-6 backdrop-blur-sm font-headline-pixel lg:col-span-3">
                     <ForfeitEndButton
                       sessionMeta={{
                         sessionId: session.id,
@@ -218,7 +218,7 @@ export default async function DebatePage({ searchParams }: DebatePageProps) {
               </header>
 
               <div className="relative z-10 grid flex-1 grid-cols-12 gap-0">
-                <section className="col-span-12 border-r-4 border-red-950 bg-[#2a0808]/90 p-6 backdrop-blur-sm lg:col-span-3">
+                <section className="col-span-12 border-r-4 border-red-950 bg-[#2a0808]/90 p-6 backdrop-blur-sm font-headline-pixel lg:col-span-3">
                   <h2 className="pixel-text-base mb-8 flex items-center gap-2 font-black uppercase text-red-100">
                     <MaterialIcon name="menu_book" className="text-orange-500" />
                     WSDA Rules
@@ -265,7 +265,7 @@ export default async function DebatePage({ searchParams }: DebatePageProps) {
                   <WsdaDebateRoom />
                 </section>
 
-                <section className="col-span-12 space-y-10 bg-[#2a0808]/90 p-6 backdrop-blur-sm lg:col-span-3">
+                <section className="col-span-12 space-y-10 bg-[#2a0808]/90 p-6 backdrop-blur-sm font-headline-pixel lg:col-span-3">
                   <ForfeitEndButton
                     sessionMeta={{
                       sessionId: session.id,

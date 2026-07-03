@@ -430,12 +430,12 @@ export function WsdaDebateProvider({
             role="alertdialog"
             aria-modal="true"
             aria-label="Debate time is up"
-            className="w-full max-w-md border-4 border-red-900 bg-[#1a0505] p-4 shadow-[8px_8px_0px_0px_rgba(0,0,0,0.8)] md:p-5"
+            className="w-full max-w-md border-4 border-red-900 bg-[#1a0505] p-4 shadow-[8px_8px_0px_0px_rgba(0,0,0,0.8)] md:p-5 font-headline-pixel"
           >
             <p className="pixel-text-xs font-black uppercase tracking-wide text-orange-500">
               Time Is Up
             </p>
-            <p className="pixel-text-xs mt-3 leading-relaxed text-stone-200 normal-case">
+            <p className="debate-chat-body mt-3 text-stone-200 normal-case">
               The WSDA round has ended. Click OK to resolve results.
             </p>
             <div className="mt-4 flex justify-end">
@@ -489,7 +489,7 @@ export function WsdaDebateProvider({
               </button>
             </div>
             {completeResolveError ? (
-              <p className="pixel-text-xs mt-3 leading-relaxed text-amber-300 normal-case">
+              <p className="debate-chat-body mt-3 text-amber-300 normal-case">
                 {completeResolveError}
               </p>
             ) : null}

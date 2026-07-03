@@ -37,7 +37,8 @@ export function WsdaDebateRoom() {
   );
 
   return (
-    <DebateChatPanel
+    <div className="flex min-h-0 flex-1 flex-col">
+      <DebateChatPanel
       sessionId={session.id}
       opponentName={session.opponentName}
       phaseLabel={phaseLabel}
@@ -54,5 +55,6 @@ export function WsdaDebateRoom() {
       selfAvatarUrl={session.selfAvatarUrl}
       opponentAvatarUrl={session.opponentAvatarUrl}
     />
+    </div>
   );
 }

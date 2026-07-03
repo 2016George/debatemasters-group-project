@@ -786,9 +786,9 @@ export function DebateChatPanel({
     isWsda && !roundComplete ? wsdaRoundChatCopy(phaseIndex) : null;
 
   return (
-    <>
+    <div className="debate-chat-panel flex min-h-0 flex-1 flex-col">
       {currentSessionCopy ? (
-        <div className="w-full border-y-2 border-orange-700 bg-orange-950/85 px-4 py-3 shadow-[0_4px_0px_0px_rgba(0,0,0,0.35)] md:px-6">
+        <div className="font-headline-pixel w-full border-y-2 border-orange-700 bg-orange-950/85 px-4 py-3 shadow-[0_4px_0px_0px_rgba(0,0,0,0.35)] md:px-6">
           <p className="pixel-text-xs font-black uppercase text-orange-400">
             Current session {currentSessionCopy.roundNumber} of{" "}
             {currentSessionCopy.totalRounds}
@@ -805,10 +805,10 @@ export function DebateChatPanel({
         {isWsda && roundComplete ? (
           <div className="flex justify-center">
             <div className="max-w-[95%] border-2 border-stone-600 bg-stone-900/90 px-4 py-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)]">
-              <p className="pixel-text-xs font-black uppercase text-stone-400">
+              <p className="font-headline-pixel pixel-text-xs font-black uppercase text-stone-400">
                 Debate complete
               </p>
-              <p className="pixel-text-xs mt-2 font-medium leading-relaxed text-stone-300 normal-case">
+              <p className="debate-chat-body mt-2 text-stone-200 normal-case">
                 All WSDA segments have finished. Thank both sides.
               </p>
             </div>
@@ -821,10 +821,10 @@ export function DebateChatPanel({
                 return (
                   <div key={row.key} className="flex justify-center px-1">
                     <div className="max-w-[min(100%,52rem)] border-2 border-orange-700/60 bg-orange-950/50 px-4 py-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.45)] md:px-5">
-                      <p className="pixel-text-xs font-black uppercase tracking-wide text-orange-400">
+                      <p className="font-headline-pixel pixel-text-xs font-black uppercase tracking-wide text-orange-400">
                         System
                       </p>
-                      <p className="pixel-text-xs mt-2 font-medium leading-relaxed whitespace-pre-wrap text-stone-200 normal-case">
+                      <p className="debate-chat-body mt-2 max-w-prose whitespace-pre-wrap text-stone-100 normal-case">
                         {row.text}
                       </p>
                     </div>
@@ -867,7 +867,7 @@ export function DebateChatPanel({
                     }`}
                   >
                     <span
-                      className={`pixel-text-xs mb-3 block font-bold uppercase ${
+                      className={`debate-chat-label mb-3 block ${
                         isSelf
                           ? "text-right text-on-primary-fixed-variant"
                           : "text-orange-400"
@@ -882,8 +882,8 @@ export function DebateChatPanel({
                           : opponentName}
                     </span>
                     <p
-                      className={`pixel-text-xs leading-loose whitespace-pre-wrap ${
-                        isSelf ? "text-on-primary-container" : "text-stone-200"
+                      className={`debate-chat-body max-w-prose whitespace-pre-wrap ${
+                        isSelf ? "text-on-primary-container" : "text-stone-100"
                       }`}
                     >
                       {m.body}
@@ -900,10 +900,10 @@ export function DebateChatPanel({
                 return (
                   <div key={row.key} className="flex justify-center px-1">
                     <div className="max-w-[min(100%,52rem)] border-2 border-orange-700/60 bg-orange-950/50 px-4 py-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.45)] md:px-5">
-                      <p className="pixel-text-xs font-black uppercase tracking-wide text-orange-400">
+                      <p className="font-headline-pixel pixel-text-xs font-black uppercase tracking-wide text-orange-400">
                         System
                       </p>
-                      <p className="pixel-text-xs mt-2 font-medium leading-relaxed whitespace-pre-wrap text-stone-200 normal-case">
+                      <p className="debate-chat-body mt-2 max-w-prose whitespace-pre-wrap text-stone-100 normal-case">
                         {row.text}
                       </p>
                     </div>
@@ -926,10 +926,10 @@ export function DebateChatPanel({
                       />
                     </div>
                     <div className="max-w-[85%] border-2 border-on-primary-fixed-variant bg-primary-fixed/90 p-4 shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)] backdrop-blur-md md:p-5">
-                      <span className="pixel-text-xs mb-3 block text-right font-bold uppercase text-on-primary-fixed-variant">
+                      <span className="debate-chat-label mb-3 block text-right text-on-primary-fixed-variant">
                         {e.speaker} — Pro Constructive
                       </span>
-                      <p className="pixel-text-xs leading-loose text-on-primary-container">
+                      <p className="debate-chat-body max-w-prose text-on-primary-container">
                         {e.text}
                       </p>
                     </div>
@@ -947,10 +947,10 @@ export function DebateChatPanel({
                       />
                     </div>
                     <div className="max-w-[85%] border-2 border-red-900/50 bg-black/80 p-4 shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)] backdrop-blur-md md:p-5">
-                      <span className="pixel-text-xs mb-3 block font-bold uppercase text-orange-400">
+                      <span className="debate-chat-label mb-3 block text-orange-400">
                         {e.speaker} — Pro Constructive
                       </span>
-                      <p className="pixel-text-xs leading-loose text-stone-200">{e.text}</p>
+                      <p className="debate-chat-body max-w-prose text-stone-100">{e.text}</p>
                     </div>
                   </div>
                 );
@@ -969,10 +969,10 @@ export function DebateChatPanel({
                       />
                     </div>
                     <div className="max-w-[85%] border-2 border-on-primary-fixed-variant bg-primary-fixed/90 p-4 shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)] backdrop-blur-md md:p-5">
-                      <span className="pixel-text-xs mb-3 block text-right font-bold uppercase text-on-primary-fixed-variant">
+                      <span className="debate-chat-label mb-3 block text-right text-on-primary-fixed-variant">
                         {`You (${youRoleTag})`}
                       </span>
-                      <p className="pixel-text-xs leading-loose whitespace-pre-wrap text-on-primary-container">
+                      <p className="debate-chat-body max-w-prose whitespace-pre-wrap text-on-primary-container">
                         {row.text}
                       </p>
                     </div>
@@ -990,7 +990,7 @@ export function DebateChatPanel({
                       />
                     </div>
                     <div className="max-w-[85%] border-2 border-tertiary/60 bg-[#0a1628]/90 p-4 shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)] backdrop-blur-md md:p-5">
-                      <span className="pixel-text-xs mb-3 block font-bold uppercase text-tertiary-fixed">
+                      <span className="debate-chat-label mb-3 block text-tertiary-fixed">
                         {opponentName} ({opponentRoleTag})
                       </span>
                       <span
@@ -1002,7 +1002,7 @@ export function DebateChatPanel({
                       >
                         {row.usedFallback ? "Fallback Reply" : "AI Reply"}
                       </span>
-                      <p className="pixel-text-xs leading-loose text-stone-200 whitespace-pre-wrap">
+                      <p className="debate-chat-body max-w-prose whitespace-pre-wrap text-stone-100">
                         {row.text}
                       </p>
                     </div>
@@ -1013,7 +1013,7 @@ export function DebateChatPanel({
             })
           : null}
 
-        <div className="pixel-text-xs ml-4 flex items-center gap-3 italic text-orange-700 md:ml-16">
+        <div className="debate-chat-body ml-4 flex items-center gap-3 text-sm italic text-stone-400 md:ml-16">
           <span className="h-2 w-2 animate-pulse bg-red-900" />
           <span className="h-2 w-2 animate-pulse bg-red-800 [animation-delay:75ms]" />
           <span className="h-2 w-2 animate-pulse bg-red-700 [animation-delay:150ms]" />
@@ -1035,7 +1035,7 @@ export function DebateChatPanel({
 
       <div className="border-t-8 border-orange-600 bg-red-950 p-4 shadow-[0_-10px_20px_rgba(255,69,0,0.2)] md:p-6">
         {footerHint ? (
-          <p className="pixel-text-xs mb-3 border-2 border-stone-700 bg-stone-900/80 px-3 py-2 text-center font-bold uppercase tracking-wide text-stone-400">
+          <p className="font-headline-pixel pixel-text-xs mb-3 border-2 border-stone-700 bg-stone-900/80 px-3 py-2 text-center font-bold uppercase tracking-wide text-stone-400">
             {footerHint}
           </p>
         ) : null}
@@ -1050,7 +1050,7 @@ export function DebateChatPanel({
         >
           <span className="ml-2 font-bold text-orange-900">&gt;</span>
           <textarea
-            className="pixel-text-xs max-h-36 min-h-[2.5rem] flex-1 resize-none border-none bg-transparent leading-relaxed text-orange-500 placeholder:text-red-900 focus:ring-0 disabled:cursor-not-allowed disabled:opacity-60"
+            className="debate-chat-body max-h-36 min-h-[2.5rem] flex-1 resize-none border-none bg-transparent text-base leading-relaxed text-stone-100 placeholder:text-stone-500 focus:ring-0 disabled:cursor-not-allowed disabled:opacity-60"
             placeholder={
               inputLocked
                 ? footerHint ?? "Input locked"
@@ -1073,13 +1073,13 @@ export function DebateChatPanel({
             <button
               type="submit"
               disabled={inputLocked}
-              className="border-b-4 border-orange-950 bg-orange-700 px-4 py-2 text-white pixel-text-xs font-black uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)] transition-all enabled:active:translate-y-1 enabled:active:shadow-none disabled:cursor-not-allowed disabled:opacity-50 md:px-8 md:py-3"
+              className="font-headline-pixel border-b-4 border-orange-950 bg-orange-700 px-4 py-2 text-white pixel-text-xs font-black uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)] transition-all enabled:active:translate-y-1 enabled:active:shadow-none disabled:cursor-not-allowed disabled:opacity-50 md:px-8 md:py-3"
             >
               POST
             </button>
           </div>
         </form>
       </div>
-    </>
+    </div>
   );
 }
