@@ -16,6 +16,13 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/browser-clien
 export const HISTORY_STORAGE_KEY = "debate-history-v1";
 const HISTORY_HIDDEN_IDS_KEY = "debate-history-hidden-ids-v1";
 const ACTIVE_TRANSCRIPT_PREFIX = "debate-active-transcript:";
+const LATEST_ACTIVE_TRANSCRIPT_KEY = "debate-active-transcript:latest";
+/** In-memory fallback when localStorage is blocked or session id changes after remount. */
+const activeTranscriptMemory = new Map<string, DebateTranscriptEntry[]>();
+let latestActiveTranscript: {
+  sessionId: string;
+  transcript: DebateTranscriptEntry[];
+} | null = null;
 const historyListeners = new Set<() => void>();
 /** Stable snapshot while auth-backed history is loading — `[]` literals break useSyncExternalStore. */
 const EMPTY_DEBATE_HISTORY: DebateResult[] = [];
@@ -64,8 +71,14 @@ function fallbackTranscript(
 }
 
 export function normalizeDebateResult(value: DebateResult): DebateResult {
+  const scores = value.scores ?? { clarity: 0, evidence: 0 };
   return {
     ...value,
+    scores: {
+      clarity: Number(scores.clarity ?? 0),
+      evidence: Number(scores.evidence ?? 0),
+      ...(scores.wsda ? { wsda: scores.wsda } : {}),
+    },
     transcript:
       Array.isArray(value.transcript) && value.transcript.length > 0
         ? value.transcript
@@ -373,35 +386,98 @@ export function getCombinedDebateResultById(id: string): DebateResult | undefine
   return getCombinedDebateHistory().find((r) => r.id === id);
 }
 
-export function writeActiveDebateTranscript(
-  sessionId: string,
-  transcript: DebateTranscriptEntry[],
-) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(
-    `${ACTIVE_TRANSCRIPT_PREFIX}${sessionId}`,
-    JSON.stringify(transcript),
-  );
-}
-
-export function readActiveDebateTranscript(sessionId: string): DebateTranscriptEntry[] {
-  if (typeof window === "undefined") return [];
-  const raw = window.localStorage.getItem(`${ACTIVE_TRANSCRIPT_PREFIX}${sessionId}`);
-  if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter(
+function parseStoredTranscriptEntries(value: unknown): DebateTranscriptEntry[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter(
       (entry) =>
         entry &&
         typeof entry === "object" &&
         typeof (entry as Record<string, unknown>).speaker === "string" &&
         typeof (entry as Record<string, unknown>).text === "string" &&
         typeof (entry as Record<string, unknown>).at === "string",
-    ) as DebateTranscriptEntry[];
+    )
+    .map((entry) => {
+      const row = entry as Record<string, unknown>;
+      const normalized: DebateTranscriptEntry = {
+        speaker: String(row.speaker),
+        text: String(row.text),
+        at: String(row.at),
+      };
+      if (typeof row.phaseIndex === "number" && Number.isFinite(row.phaseIndex)) {
+        normalized.phaseIndex = row.phaseIndex;
+      }
+      return normalized;
+    });
+}
+
+export function writeActiveDebateTranscript(
+  sessionId: string,
+  transcript: DebateTranscriptEntry[],
+) {
+  activeTranscriptMemory.set(sessionId, transcript);
+  latestActiveTranscript = { sessionId, transcript };
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(
+      `${ACTIVE_TRANSCRIPT_PREFIX}${sessionId}`,
+      JSON.stringify(transcript),
+    );
+    window.localStorage.setItem(
+      LATEST_ACTIVE_TRANSCRIPT_KEY,
+      JSON.stringify({ sessionId, transcript }),
+    );
   } catch {
-    return [];
+    /* quota exceeded or storage blocked — memory cache still holds transcript */
   }
+}
+
+export function readActiveDebateTranscript(sessionId: string): DebateTranscriptEntry[] {
+  const fromMemory = activeTranscriptMemory.get(sessionId);
+  if (fromMemory && fromMemory.length > 0) {
+    return fromMemory;
+  }
+
+  if (typeof window !== "undefined") {
+    try {
+      const raw = window.localStorage.getItem(`${ACTIVE_TRANSCRIPT_PREFIX}${sessionId}`);
+      if (raw) {
+        const parsed = parseStoredTranscriptEntries(JSON.parse(raw));
+        if (parsed.length > 0) {
+          activeTranscriptMemory.set(sessionId, parsed);
+          return parsed;
+        }
+      }
+
+      const latestRaw = window.localStorage.getItem(LATEST_ACTIVE_TRANSCRIPT_KEY);
+      if (latestRaw) {
+        const latest = JSON.parse(latestRaw) as {
+          sessionId?: string;
+          transcript?: unknown;
+        };
+        const parsed = parseStoredTranscriptEntries(latest.transcript);
+        if (parsed.length > 0) {
+          activeTranscriptMemory.set(sessionId, parsed);
+          if (latest.sessionId && latest.sessionId !== sessionId) {
+            activeTranscriptMemory.set(latest.sessionId, parsed);
+          }
+          return parsed;
+        }
+      }
+    } catch {
+      /* ignore corrupt storage */
+    }
+  }
+
+  if (
+    latestActiveTranscript?.transcript.length &&
+    (latestActiveTranscript.sessionId === sessionId ||
+      latestActiveTranscript.transcript.length > 0)
+  ) {
+    return latestActiveTranscript.transcript;
+  }
+
+  return [];
 }
 
 function subscribeToHistory(callback: () => void): () => void {

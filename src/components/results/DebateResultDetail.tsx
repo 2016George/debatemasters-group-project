@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { MaterialIcon } from "@/components/MaterialIcon";
+import { WsdaJudgeScoreBreakdown } from "@/components/results/WsdaJudgeScoreBreakdown";
 import { downloadDebateTranscriptPdf } from "@/lib/pdf/transcript-pdf";
 import type { DebateResult } from "@/lib/data/types";
 
@@ -16,6 +17,8 @@ function ResultTopicTitle({ topicTitle }: { topicTitle: string }) {
 }
 
 export function DebateResultDetail({ r }: { r: DebateResult }) {
+  const wsda = r.scores.wsda;
+
   return (
     <div className={`relative z-20 mx-auto max-w-5xl p-8 md:p-12 ${sans}`}>
       <div className="mx-auto mb-12 max-w-4xl text-center">
@@ -43,10 +46,11 @@ export function DebateResultDetail({ r }: { r: DebateResult }) {
               <div className="border-l-4 border-primary bg-stone-200/90 p-4 text-sm italic leading-relaxed text-stone-800">
                 &quot;{r.quote}&quot;
               </div>
+              {wsda ? <WsdaJudgeScoreBreakdown wsda={wsda} /> : null}
               <div className="mt-6 grid grid-cols-2 gap-4">
                 <div className="border-2 border-primary bg-primary-fixed-dim/90 p-4">
                   <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-stone-800">
-                    Clarity
+                    {wsda ? "XP — Clarity" : "Clarity"}
                   </span>
                   <span className="text-3xl font-extrabold tabular-nums text-stone-900">
                     {r.scores.clarity}
@@ -57,7 +61,7 @@ export function DebateResultDetail({ r }: { r: DebateResult }) {
                 </div>
                 <div className="border-2 border-tertiary bg-tertiary-fixed-dim/90 p-4">
                   <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-stone-800">
-                    Evidence
+                    {wsda ? "XP — Evidence" : "Evidence"}
                   </span>
                   <span className="text-3xl font-extrabold tabular-nums text-stone-900">
                     {r.scores.evidence}

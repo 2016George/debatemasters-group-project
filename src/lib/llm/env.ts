@@ -32,7 +32,7 @@ export function getLlmConfig(): LlmConfig {
     provider,
     deepseekApiKey: required("DEEPSEEK_API_KEY"),
     deepseekBaseUrl: optional("DEEPSEEK_BASE_URL", "https://api.deepseek.com"),
-    opponentModel: optional("DEEPSEEK_MODEL_OPPONENT", "deepseek-chat"),
-    judgeModel: optional("DEEPSEEK_MODEL_JUDGE", "deepseek-reasoner"),
+    opponentModel: optional("DEEPSEEK_MODEL_OPPONENT", "deepseek-v4-flash"),
+    judgeModel: optional("DEEPSEEK_MODEL_JUDGE", "deepseek-v4-flash"),
   };
 }

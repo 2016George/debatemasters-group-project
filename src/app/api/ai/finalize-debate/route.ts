@@ -1,7 +1,8 @@
 ﻿import { NextResponse } from "next/server";
 import { buildLocalAiJudgedResult } from "@/lib/data/ai-results";
-import type { AgeBand, DebateResult, DebateTranscriptEntry } from "@/lib/data/types";
-import { judgeDebateAndFeedback } from "@/lib/llm/tasks";
+import type { AgeBand, DebateResult, DebateTranscriptEntry, DebateResultScores } from "@/lib/data/types";
+import { judgeDebateAndFeedback, type JudgeDebateOutput } from "@/lib/llm/tasks";
+import { buildLowContentWsdaJudgeScores } from "@/lib/llm/wsda-judge-parse";
 import {
   computeDebateExperienceReward,
   progressionFieldsAfterMatch,
@@ -28,6 +29,19 @@ function normalizeAgeBand(value: unknown): AgeBand {
     : "10-14";
 }
 
+function normalizeTranscriptEntry(entry: Record<string, unknown>): DebateTranscriptEntry {
+  const row: DebateTranscriptEntry = {
+    speaker: String(entry.speaker),
+    text: String(entry.text),
+    at: String(entry.at),
+  };
+  const phaseIndex = entry.phaseIndex;
+  if (typeof phaseIndex === "number" && Number.isFinite(phaseIndex)) {
+    row.phaseIndex = phaseIndex;
+  }
+  return row;
+}
+
 function normalizeTranscript(value: unknown): DebateTranscriptEntry[] {
   if (!Array.isArray(value)) return [];
   return value
@@ -39,11 +53,7 @@ function normalizeTranscript(value: unknown): DebateTranscriptEntry[] {
         typeof (entry as Record<string, unknown>).text === "string" &&
         typeof (entry as Record<string, unknown>).at === "string",
     )
-    .map((entry) => ({
-      speaker: String((entry as Record<string, unknown>).speaker),
-      text: String((entry as Record<string, unknown>).text),
-      at: String((entry as Record<string, unknown>).at),
-    }));
+    .map((entry) => normalizeTranscriptEntry(entry as Record<string, unknown>));
 }
 
 function hasSufficientDebateContent(transcript: DebateTranscriptEntry[]): boolean {
@@ -68,9 +78,32 @@ function lowContentFallbackFeedback(ageBand: AgeBand): string {
   return "The round concluded without enough substantive clash for detailed adjudication. In the next round, both sides should provide developed claims, warrants, and impact comparison.";
 }
 
+function applyLowContentJudgementFallback(
+  judgement: JudgeDebateOutput,
+  ageBand: AgeBand,
+  debateFormat?: "wsda" | "free_form",
+): JudgeDebateOutput {
+  const sharedFeedback = lowContentFallbackFeedback(ageBand);
+  const sharedQuote =
+    ageBand === "under10"
+      ? "Short, clear reasons help judges understand your side."
+      : "Clear claims plus evidence create judgeable rounds.";
+  return {
+    ...judgement,
+    rationale: "Insufficient substantive debate content for full rationale.",
+    feedback: sharedFeedback,
+    quote: sharedQuote,
+    scores:
+      debateFormat === "wsda"
+        ? buildLowContentWsdaJudgeScores()
+        : { clarity: 1.5, evidence: 1.5 },
+  };
+}
+
 async function persistArenaJudgement(input: {
   arenaRoomId: string;
   topicTitle: string;
+  userRole: "pro" | "con";
   debateFormat?: "wsda" | "free_form";
   transcript: DebateTranscriptEntry[];
   judge: {
@@ -134,6 +167,15 @@ async function persistArenaJudgement(input: {
     throw new Error("Arena judged result payload missing.");
   }
   const payload = row.payload as DebateResult;
+  const sideJudgement =
+    input.userRole === "con" ? input.judge.con : input.judge.pro;
+  const mergedScores: DebateResultScores = {
+    clarity: sideJudgement.scores.clarity,
+    evidence: sideJudgement.scores.evidence,
+    ...(sideJudgement.scores.wsda
+      ? { wsda: sideJudgement.scores.wsda }
+      : {}),
+  };
   const { data: prof } = await supabase
     .from("profiles")
     .select("total_experience")
@@ -143,16 +185,22 @@ async function persistArenaJudgement(input: {
   const xpEarned = computeDebateExperienceReward({
     outcome: payload.outcome,
     arenaRoomId: input.arenaRoomId,
-    scores: payload.scores,
+    scores: mergedScores,
   });
   const before = Math.max(0, totalAfter - xpEarned);
   const prog = progressionFieldsAfterMatch({
     totalExperienceBefore: before,
     outcome: payload.outcome,
     arenaRoomId: input.arenaRoomId,
-    scores: payload.scores,
+    scores: mergedScores,
   });
-  return { ...payload, ...prog };
+  return {
+    ...payload,
+    ...prog,
+    scores: mergedScores,
+    feedback: `${sideJudgement.feedback} Decision rationale: ${input.judge.rationale}`,
+    quote: sideJudgement.quote,
+  };
 }
 
 export async function POST(request: Request) {
@@ -193,18 +241,11 @@ export async function POST(request: Request) {
         transcript,
       });
       if (!hasEnoughContent) {
-        const sharedFeedback = lowContentFallbackFeedback(ageBand);
-        const sharedQuote =
-          ageBand === "under10"
-            ? "Short, clear reasons help judges understand your side."
-            : "Clear claims plus evidence create judgeable rounds.";
-        soloJudgement = {
-          ...soloJudgement,
-          rationale: "Insufficient substantive debate content for full rationale.",
-          feedback: sharedFeedback,
-          quote: sharedQuote,
-          scores: { clarity: 1.5, evidence: 1.5 },
-        };
+        soloJudgement = applyLowContentJudgementFallback(
+          soloJudgement,
+          ageBand,
+          debateFormat,
+        );
       }
 
       let totalExperienceBefore = 0;
@@ -266,25 +307,16 @@ export async function POST(request: Request) {
       }),
     ]);
     if (!hasEnoughContent) {
-      const sharedFeedback = lowContentFallbackFeedback(ageBand);
-      const sharedQuote =
-        ageBand === "under10"
-          ? "Short, clear reasons help judges understand your side."
-          : "Clear claims plus evidence create judgeable rounds.";
-      judgementForPro = {
-        ...judgementForPro,
-        rationale: "Insufficient substantive debate content for full rationale.",
-        feedback: sharedFeedback,
-        quote: sharedQuote,
-        scores: { clarity: 1.5, evidence: 1.5 },
-      };
-      judgementForCon = {
-        ...judgementForCon,
-        rationale: "Insufficient substantive debate content for full rationale.",
-        feedback: sharedFeedback,
-        quote: sharedQuote,
-        scores: { clarity: 1.5, evidence: 1.5 },
-      };
+      judgementForPro = applyLowContentJudgementFallback(
+        judgementForPro,
+        ageBand,
+        debateFormat,
+      );
+      judgementForCon = applyLowContentJudgementFallback(
+        judgementForCon,
+        ageBand,
+        debateFormat,
+      );
     }
 
     let winner: "pro" | "con";
@@ -320,6 +352,7 @@ export async function POST(request: Request) {
     const payload = await persistArenaJudgement({
       arenaRoomId,
       topicTitle,
+      userRole,
       debateFormat,
       transcript,
       judge: judgement,

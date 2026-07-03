@@ -53,7 +53,40 @@ export interface DebateTranscriptEntry {
   speaker: string;
   text: string;
   at: string;
+  /** WSDA round segment (0–9) when the message was sent; used for judge segmentation. */
+  phaseIndex?: number;
 }
+
+/** Allowed per-aspect cell score from the WSDA judge docx rubric. */
+export type WsdaAspectScore = 0 | 0.5 | 0.8 | 1;
+
+export type WsdaSegmentScores = {
+  logic: WsdaAspectScore;
+  coherence: WsdaAspectScore;
+  grammar: WsdaAspectScore;
+  evidence: WsdaAspectScore;
+  reactions: WsdaAspectScore;
+  articulation: WsdaAspectScore;
+};
+
+export type WsdaUserJudgeAssessment = {
+  skillTotal: number;
+  persuasivenessTotal: number;
+  total: number;
+  segments: {
+    constructive: WsdaSegmentScores;
+    crossExAttack: WsdaSegmentScores;
+    crossExDefense: WsdaSegmentScores;
+    rebuttal: WsdaSegmentScores;
+    finalFocus: WsdaSegmentScores;
+  };
+};
+
+export type DebateResultScores = {
+  clarity: number;
+  evidence: number;
+  wsda?: WsdaUserJudgeAssessment;
+};
 
 export interface DebateResult {
   id: string;
@@ -72,7 +105,7 @@ export interface DebateResult {
   xpEarned: number;
   feedback: string;
   quote: string;
-  scores: { clarity: number; evidence: number };
+  scores: DebateResultScores;
   suggestedTomes: {
     title: string;
     subtitle: string;

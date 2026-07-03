@@ -1,4 +1,4 @@
-﻿import type { DebateResult, DebateTranscriptEntry } from "@/lib/data/types";
+﻿import type { DebateResult, DebateTranscriptEntry, DebateResultScores } from "@/lib/data/types";
 import { progressionFieldsAfterMatch } from "@/lib/progression/experience";
 
 export type AiJudgeSummary = {
@@ -7,10 +7,7 @@ export type AiJudgeSummary = {
   rationale: string;
   feedback: string;
   quote: string;
-  scores: {
-    clarity: number;
-    evidence: number;
-  };
+  scores: DebateResultScores;
 };
 
 type BuildLocalJudgedResultInput = {
@@ -54,6 +51,9 @@ export function buildLocalAiJudgedResult(
     scores: {
       clarity: input.judgement.scores.clarity,
       evidence: input.judgement.scores.evidence,
+      ...(input.judgement.scores.wsda
+        ? { wsda: input.judgement.scores.wsda }
+        : {}),
     },
     suggestedTomes: won
       ? [

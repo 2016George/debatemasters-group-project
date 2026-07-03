@@ -1,7 +1,12 @@
 import "server-only";
-import type { AgeBand, DebateTranscriptEntry } from "@/lib/data/types";
+import type { AgeBand, DebateTranscriptEntry, WsdaUserJudgeAssessment } from "@/lib/data/types";
 import { getLlmConfig } from "@/lib/llm/env";
 import { resolveLlmTask } from "@/lib/llm/provider-registry";
+import { parseWsdaJudgeModelOutput } from "@/lib/llm/wsda-judge-parse";
+import {
+  buildWsdaJudgeSystemPrompt,
+  buildWsdaJudgeUserPrompt,
+} from "@/lib/llm/wsda-judge-prompts";
 import { WSDA_PHASES } from "@/lib/debate/wsda-schedule";
 import {
   buildWsdaOpponentSystemPrompt,
@@ -46,6 +51,7 @@ export type JudgeDebateOutput = {
   scores: {
     clarity: number;
     evidence: number;
+    wsda?: WsdaUserJudgeAssessment;
   };
 };
 
@@ -206,12 +212,58 @@ function shouldRetryJudgeError(error: unknown): boolean {
     msg.includes("econnreset") ||
     msg.includes("temporar") ||
     msg.includes("service unavailable") ||
-    msg.includes("gateway")
+    msg.includes("gateway") ||
+    msg.includes("empty content") ||
+    msg.includes("length")
   );
 }
 
 async function waitMs(ms: number): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+type JudgeLlmMessage = {
+  role: "system" | "user";
+  content: string;
+};
+
+async function generateJudgeWithRetries(
+  provider: ReturnType<typeof resolveLlmTask>["provider"],
+  model: string,
+  messages: JudgeLlmMessage[],
+  maxTokens: number,
+): Promise<string> {
+  let responseText = "";
+  let lastError: unknown = null;
+  const retryBackoffMs = [0, 700, 1400];
+  for (let attempt = 0; attempt < retryBackoffMs.length; attempt += 1) {
+    if (retryBackoffMs[attempt] > 0) {
+      await waitMs(retryBackoffMs[attempt]);
+    }
+    try {
+      const response = await provider.generate({
+        model,
+        temperature: 0.2,
+        maxTokens,
+        jsonMode: "json_object",
+        messages,
+      });
+      responseText = response.text;
+      lastError = null;
+      break;
+    } catch (error) {
+      lastError = error;
+      if (attempt === retryBackoffMs.length - 1 || !shouldRetryJudgeError(error)) {
+        throw error;
+      }
+    }
+  }
+  if (!responseText) {
+    throw (lastError instanceof Error
+      ? lastError
+      : new Error("Judge model returned no response after retries."));
+  }
+  return responseText;
 }
 
 function opponentSystemPrompt(input: OpponentReplyRequest): string {
@@ -387,6 +439,40 @@ export async function generateDebateTopic(
 export async function judgeDebateAndFeedback(
   input: JudgeDebateRequest,
 ): Promise<JudgeDebateOutput> {
+  if (input.debateFormat === "wsda") {
+    return judgeWsdaDebateAndFeedback(input);
+  }
+  return judgeFreeFormDebateAndFeedback(input);
+}
+
+async function judgeWsdaDebateAndFeedback(
+  input: JudgeDebateRequest,
+): Promise<JudgeDebateOutput> {
+  const { provider, model } = resolveLlmTask("judge");
+  const userSide = input.userRole === "con" ? "con" : "pro";
+  const messages = [
+    {
+      role: "system" as const,
+      content: buildWsdaJudgeSystemPrompt(),
+    },
+    {
+      role: "user" as const,
+      content: buildWsdaJudgeUserPrompt({
+        topicTitle: input.topicTitle,
+        userRole: userSide,
+        ageBand: input.ageBand,
+        transcript: input.transcript,
+      }),
+    },
+  ];
+  const responseText = await generateJudgeWithRetries(provider, model, messages, 4096);
+  const parsed = parseJsonFromModel(responseText);
+  return parseWsdaJudgeModelOutput(parsed, { userRole: userSide });
+}
+
+async function judgeFreeFormDebateAndFeedback(
+  input: JudgeDebateRequest,
+): Promise<JudgeDebateOutput> {
   const { provider, model } = resolveLlmTask("judge");
   const userSide = input.userRole === "con" ? "con" : "pro";
   const messages = [
@@ -399,7 +485,7 @@ export async function judgeDebateAndFeedback(
       role: "user" as const,
       content: [
         `Topic: ${input.topicTitle}`,
-        `Format: ${input.debateFormat === "wsda" ? "WSDA" : "Standard"}`,
+        `Format: Standard`,
         `User side: ${userSide.toUpperCase()}`,
         ageBandToneGuide(input.ageBand),
         "Evaluate based on the entire transcript provided below.",
@@ -417,37 +503,7 @@ export async function judgeDebateAndFeedback(
       ].join("\n\n"),
     },
   ];
-  let responseText = "";
-  let lastError: unknown = null;
-  const retryBackoffMs = [0, 700, 1400];
-  for (let attempt = 0; attempt < retryBackoffMs.length; attempt += 1) {
-    if (retryBackoffMs[attempt] > 0) {
-      await waitMs(retryBackoffMs[attempt]);
-    }
-    try {
-      const response = await provider.generate({
-        model,
-        temperature: 0.2,
-        maxTokens: 900,
-        jsonMode: "json_object",
-        messages,
-      });
-      responseText = response.text;
-      lastError = null;
-      break;
-    } catch (error) {
-      lastError = error;
-      if (attempt === retryBackoffMs.length - 1 || !shouldRetryJudgeError(error)) {
-        throw error;
-      }
-    }
-  }
-  if (!responseText) {
-    throw (lastError instanceof Error
-      ? lastError
-      : new Error("Judge model returned no response after retries."));
-  }
-
+  const responseText = await generateJudgeWithRetries(provider, model, messages, 900);
   const parsed = parseJsonFromModel(responseText);
   const winner = parsed.winner === "con" ? "con" : "pro";
   const confidenceRaw =

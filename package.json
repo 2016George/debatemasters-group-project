@@ -7,7 +7,11 @@
     "dev:turbo": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "verify:wsda": "node scripts/verify-wsda-solo.mjs",
+    "verify:wsda-prompts": "node --experimental-strip-types scripts/verify-wsda-prompts.mjs",
+    "verify:wsda-judge": "node --experimental-strip-types scripts/verify-wsda-judge-prompts.mjs",
+    "verify:wsda-all": "npm run verify:wsda && npm run verify:wsda-prompts && npm run verify:wsda-judge"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.2",

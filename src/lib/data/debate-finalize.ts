@@ -2,6 +2,7 @@
 
 import {
   appendDebateResultToHistory,
+  createJudgingUnavailableResult,
   readActiveDebateTranscript,
   type ForfeitMeta,
 } from "@/lib/data/history-storage";
@@ -9,7 +10,7 @@ import {
   getAgeBandPreference,
   refreshUserProfileFromServer,
 } from "@/lib/data/profile-storage";
-import type { DebateResult } from "@/lib/data/types";
+import type { DebateResult, DebateTranscriptEntry } from "@/lib/data/types";
 import { isSupabaseConfigured } from "@/lib/supabase/browser-client";
 
 type FinalizeDebateOutcome =
@@ -25,8 +26,21 @@ type FinalizeDebateResponse = {
 
 export async function finalizeDebateWithAi(
   sessionMeta: ForfeitMeta,
+  options?: { transcriptOverride?: DebateTranscriptEntry[] },
 ): Promise<FinalizeDebateOutcome> {
-  const transcript = readActiveDebateTranscript(sessionMeta.sessionId);
+  const transcript =
+    options?.transcriptOverride?.length
+      ? options.transcriptOverride
+      : readActiveDebateTranscript(sessionMeta.sessionId);
+
+  if (transcript.length === 0) {
+    return {
+      ok: false,
+      error:
+        "Transcript was not found for this debate. Do not refresh the page — try OK again, or start a new round.",
+    };
+  }
+
   const res = await fetch("/api/ai/finalize-debate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -56,4 +70,14 @@ export async function finalizeDebateWithAi(
   }
 
   return { ok: true, resultId: data.result.id };
+}
+
+/** Save a completed round when the judge API fails after retries. */
+export async function saveJudgingUnavailableResult(
+  sessionMeta: ForfeitMeta,
+  reason?: string,
+): Promise<FinalizeDebateOutcome> {
+  const result = createJudgingUnavailableResult(sessionMeta, { reason });
+  await appendDebateResultToHistory(result);
+  return { ok: true, resultId: result.id };
 }

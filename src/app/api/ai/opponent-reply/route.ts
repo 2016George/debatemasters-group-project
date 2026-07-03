@@ -40,6 +40,19 @@ function normalizeAgeBand(value: unknown): AgeBand {
     : "10-14";
 }
 
+function normalizeTranscriptEntry(entry: Record<string, unknown>): DebateTranscriptEntry {
+  const row: DebateTranscriptEntry = {
+    speaker: String(entry.speaker),
+    text: String(entry.text),
+    at: String(entry.at),
+  };
+  const phaseIndex = entry.phaseIndex;
+  if (typeof phaseIndex === "number" && Number.isFinite(phaseIndex)) {
+    row.phaseIndex = phaseIndex;
+  }
+  return row;
+}
+
 function normalizeTranscript(value: unknown): DebateTranscriptEntry[] {
   if (!Array.isArray(value)) return [];
   return value
@@ -51,11 +64,7 @@ function normalizeTranscript(value: unknown): DebateTranscriptEntry[] {
         typeof (entry as Record<string, unknown>).text === "string" &&
         typeof (entry as Record<string, unknown>).at === "string",
     )
-    .map((entry) => ({
-      speaker: String((entry as Record<string, unknown>).speaker),
-      text: String((entry as Record<string, unknown>).text),
-      at: String((entry as Record<string, unknown>).at),
-    }));
+    .map((entry) => normalizeTranscriptEntry(entry as Record<string, unknown>));
 }
 
 export async function POST(request: Request) {

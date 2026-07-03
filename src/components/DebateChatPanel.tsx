@@ -316,6 +316,7 @@ export function DebateChatPanel({
           speaker: "You (Pro)",
           text: proSpeech,
           at: at(2),
+          phaseIndex: 0,
         };
         initial.push(opening);
         setWsdaOpeningEntry(opening);
@@ -533,6 +534,7 @@ export function DebateChatPanel({
         speaker: `${opponentName} (${opponentRoleTag})`,
         text: normalized,
         at: postedAt,
+        phaseIndex: phase,
       });
     },
     [appendTranscriptEntry, opponentName, opponentRoleTag],
@@ -684,6 +686,7 @@ export function DebateChatPanel({
             : opponentName,
         text: m.body,
         at: m.created_at,
+        ...(isWsda ? { phaseIndex: phaseIndexRef.current } : {}),
       });
     }
   }, [
@@ -725,6 +728,7 @@ export function DebateChatPanel({
       speaker: isWsda ? `You (${youRoleTag})` : `${youDisplayName} (You)`,
       text,
       at: postedAt,
+      ...(isWsda ? { phaseIndex } : {}),
     });
     setDraft("");
     if (isWsda && !arenaRoomId) {

@@ -18,7 +18,7 @@ import {
   type ForfeitMeta,
 } from "@/lib/data/history-storage";
 import { getUserProfileSnapshot } from "@/lib/data/profile-storage";
-import { finalizeDebateWithAi } from "@/lib/data/debate-finalize";
+import { finalizeDebateWithAi, saveJudgingUnavailableResult } from "@/lib/data/debate-finalize";
 import { wsdaStateFromElapsedSeconds } from "@/lib/debate/wsda-elapsed";
 import {
   WSDA_PHASES,
@@ -461,6 +461,17 @@ export function WsdaDebateProvider({
                             window.setTimeout(resolve, 800),
                           );
                         } else {
+                          const fallback = await saveJudgingUnavailableResult(
+                            sessionMeta,
+                            judged.error ||
+                              "Could not resolve AI judgment yet. Please try again.",
+                          );
+                          if (fallback.ok) {
+                            router.push(
+                              `/results/${encodeURIComponent(fallback.resultId)}`,
+                            );
+                            return;
+                          }
                           setCompleteResolveError(
                             judged.error ||
                               "Could not resolve AI judgment yet. Please try again.",
