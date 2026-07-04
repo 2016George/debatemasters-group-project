@@ -994,7 +994,7 @@ export function DebateChatPanel({
                         {opponentName} ({opponentRoleTag})
                       </span>
                       <span
-                        className={`mb-3 inline-flex border px-2 py-1 text-[10px] font-bold uppercase tracking-wide ${
+                        className={`mb-3 inline-flex border px-2 py-1 pixel-text-xs font-bold uppercase tracking-wide ${
                           row.usedFallback
                             ? "border-orange-700 bg-orange-950/60 text-orange-300"
                             : "border-emerald-700 bg-emerald-950/60 text-emerald-300"

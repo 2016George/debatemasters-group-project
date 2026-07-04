@@ -34,7 +34,7 @@ async function fetchWithTimeout(
 
 function MatchmakingPageFallback() {
   return (
-    <div className="overflow-hidden bg-surface font-[family-name:var(--font-inter)] text-on-surface">
+    <div className="overflow-hidden bg-surface font-app text-on-surface">
       <NetherSidebarShell sidebar={<OnboardingSidebar />}>
         <main className="matchmaking-nether-bg relative flex h-[100dvh] items-center justify-center md:h-screen">
           <p className="brick-sans text-sm font-black uppercase text-white">Loading…</p>
@@ -264,7 +264,7 @@ function MatchmakingPageContent() {
 
   if (isSupabaseConfigured() && !arenaAuthChecked) {
     return (
-      <div className="overflow-hidden bg-surface font-[family-name:var(--font-inter)] text-on-surface">
+      <div className="overflow-hidden bg-surface font-app text-on-surface">
         <NetherSidebarShell sidebar={<OnboardingSidebar />}>
           <main className="matchmaking-nether-bg relative flex h-[100dvh] items-center justify-center md:h-screen">
             <p className="brick-sans text-sm font-black uppercase text-white">Loading…</p>
@@ -275,7 +275,7 @@ function MatchmakingPageContent() {
   }
 
   return (
-    <div className="overflow-hidden bg-surface font-[family-name:var(--font-inter)] text-on-surface">
+    <div className="overflow-hidden bg-surface font-app text-on-surface">
       <NetherSidebarShell sidebar={<OnboardingSidebar />}>
         <main className="matchmaking-nether-bg relative flex h-[100dvh] items-center justify-center md:h-screen">
           <div className="pixel-overlay-match absolute inset-0 opacity-40" />
@@ -319,10 +319,10 @@ function MatchmakingPageContent() {
                 </div>
               </div>
               <div className="mt-2 flex justify-between px-1">
-                <span className="font-[family-name:var(--font-space-grotesk)] text-[11px] font-bold uppercase tracking-widest text-primary-fixed">
+                <span className="headline pixel-text-xs font-bold uppercase tracking-widest text-primary-fixed">
                   {matched ? "Match found" : "Searching..."}
                 </span>
-                <span className="font-[family-name:var(--font-space-grotesk)] text-[11px] font-bold uppercase tracking-widest text-primary-fixed">
+                <span className="headline pixel-text-xs font-bold uppercase tracking-widest text-primary-fixed">
                   {matched ? 100 : pct}%
                 </span>
               </div>
@@ -414,7 +414,7 @@ function MatchmakingPageContent() {
           className="flex flex-col items-center justify-center text-white"
         >
           <MaterialIcon name="home" />
-          <span className="font-[family-name:var(--font-space-grotesk)] text-[10px] font-bold uppercase">
+          <span className="headline pixel-text-sm font-bold uppercase">
             Home
           </span>
         </Link>
@@ -423,7 +423,7 @@ function MatchmakingPageContent() {
           className="flex flex-col items-center justify-center text-stone-500"
         >
           <MaterialIcon name="history" />
-          <span className="font-[family-name:var(--font-space-grotesk)] text-[10px] font-bold uppercase">
+          <span className="headline pixel-text-sm font-bold uppercase">
             History
           </span>
         </Link>
@@ -432,7 +432,7 @@ function MatchmakingPageContent() {
           className="flex flex-col items-center justify-center text-stone-500"
         >
           <MaterialIcon name="equalizer" />
-          <span className="font-[family-name:var(--font-space-grotesk)] text-[10px] font-bold uppercase">
+          <span className="headline pixel-text-sm font-bold uppercase">
             Stats
           </span>
         </button>

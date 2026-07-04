@@ -80,7 +80,7 @@ export default function ResultsPage() {
                 className="group flex w-full min-w-0 flex-col gap-3 border-4 border-stone-800 bg-black/70 p-4 shadow-[6px_6px_0_0_rgba(0,0,0,0.85)] transition-transform hover:-translate-y-0.5 hover:border-stone-600 md:flex-row md:items-center md:justify-between md:gap-6 md:p-5"
               >
                 <div className="min-w-0 flex-1 text-left">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">
+                  <p className="pixel-text-xs font-semibold uppercase tracking-wide text-stone-500">
                     {formatDebateWhen(d.debatedAt)}
                   </p>
                   <h2 className="mt-1 text-base font-bold uppercase leading-snug tracking-wide text-white group-hover:text-primary-fixed md:text-lg">
@@ -89,7 +89,7 @@ export default function ResultsPage() {
                 </div>
                 <div className="flex min-w-[9.5rem] shrink-0 items-center justify-end gap-4">
                   <span
-                    className={`w-[5.75rem] border-2 px-3 py-1.5 text-center text-[11px] font-bold uppercase tracking-wide ${labelClass}`}
+                    className={`w-[5.75rem] border-2 px-3 py-1.5 text-center pixel-text-xs font-bold uppercase tracking-wide ${labelClass}`}
                   >
                     {label}
                   </span>

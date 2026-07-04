@@ -57,7 +57,7 @@ export default function TopicsPage() {
   }, []);
 
   return (
-    <div className="bg-background font-[family-name:var(--font-inter)] text-on-background selection:bg-primary selection:text-white">
+    <div className="bg-background font-app text-on-background selection:bg-primary selection:text-white">
       <NetherSidebarShell sidebar={<OnboardingSidebar />}>
         <main className="nether-bg-topics relative min-h-screen overflow-hidden">
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40" />
@@ -73,14 +73,14 @@ export default function TopicsPage() {
             <section className="mb-8 border-l-8 border-primary-fixed bg-stone-900/70 p-5">
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:items-start">
                 <div>
-                  <p className="mb-3 font-headline-pixel text-[8px] font-bold uppercase tracking-widest text-stone-300">
+                  <p className="mb-3 font-headline-pixel pixel-text-xs font-bold uppercase tracking-widest text-stone-300">
                     Side
                   </p>
                   <div className="inline-flex border-4 border-black bg-stone-950 p-1">
                     <button
                       type="button"
                       onClick={() => setSoloRole("pro")}
-                      className={`px-4 py-2 font-headline-pixel text-[10px] font-black uppercase transition-all ${
+                      className={`px-4 py-2 font-headline-pixel pixel-text-sm font-black uppercase transition-all ${
                         soloRole === "pro"
                           ? "bg-primary text-white shadow-[0px_3px_0px_0px_#085300]"
                           : "bg-stone-800 text-stone-300 hover:bg-stone-700"
@@ -91,7 +91,7 @@ export default function TopicsPage() {
                     <button
                       type="button"
                       onClick={() => setSoloRole("con")}
-                      className={`px-4 py-2 font-headline-pixel text-[10px] font-black uppercase transition-all ${
+                      className={`px-4 py-2 font-headline-pixel pixel-text-sm font-black uppercase transition-all ${
                         soloRole === "con"
                           ? "bg-tertiary text-white shadow-[0px_3px_0px_0px_#00497d]"
                           : "bg-stone-800 text-stone-300 hover:bg-stone-700"
@@ -102,10 +102,10 @@ export default function TopicsPage() {
                   </div>
                 </div>
                 <div>
-                  <p className="mb-3 font-headline-pixel text-[8px] font-bold uppercase tracking-widest text-stone-300">
+                  <p className="mb-3 font-headline-pixel pixel-text-xs font-bold uppercase tracking-widest text-stone-300">
                     Format — WSDA
                   </p>
-                  <p className="mb-3 font-headline-pixel text-[9px] font-bold leading-relaxed text-stone-400">
+                  <p className="mb-3 font-headline-pixel pixel-text-xs font-bold leading-relaxed text-stone-400">
                     Structured 10-phase round ({formatMmSs(wsdaTotalSeconds)} total).
                     Phases advance automatically with timed speaking segments.
                   </p>
@@ -113,7 +113,7 @@ export default function TopicsPage() {
                     {WSDA_PHASES.map((phase, index) => (
                       <li
                         key={`${index}-${phase.label}`}
-                        className="flex items-baseline justify-between gap-3 font-headline-pixel text-[8px] font-bold text-stone-300"
+                        className="flex items-baseline justify-between gap-3 font-headline-pixel pixel-text-xs font-bold text-stone-300"
                       >
                         <span className="min-w-0 flex-1 leading-snug">
                           {index + 1}. {phase.label}
@@ -148,14 +148,14 @@ export default function TopicsPage() {
                     </div>
                     <div>
                       <div className="mb-4 inline-block bg-tertiary px-3 py-1">
-                        <span className="font-headline-pixel text-[8px] font-black uppercase tracking-tighter text-white">
+                        <span className="font-headline-pixel pixel-text-xs font-black uppercase tracking-tighter text-white">
                           {t.badge}
                         </span>
                       </div>
                       <h3 className="mb-2 font-headline-pixel text-xl font-black uppercase leading-tight text-on-surface">
                         {t.title}
                       </h3>
-                      <p className="min-h-[3.25rem] font-headline-pixel text-[10px] font-bold leading-relaxed text-on-surface-variant">
+                      <p className="min-h-[3.25rem] font-headline-pixel pixel-text-sm font-bold leading-relaxed text-on-surface-variant">
                         {!soloTopicsReady ? (
                           <span className="text-on-surface-variant/50">Loading topic…</span>
                         ) : (
@@ -171,13 +171,13 @@ export default function TopicsPage() {
                 const btn = debateHref ? (
                   <Link
                     href={debateHref}
-                    className={`relative flex w-full items-center justify-center gap-2 bg-tertiary py-3 px-6 font-headline-pixel text-[10px] font-black text-white transition-all hover:translate-y-[2px] active:translate-y-[4px] active:shadow-none ${topicCardGoShadow}`}
+                    className={`relative flex w-full items-center justify-center gap-2 bg-tertiary py-3 px-6 font-headline-pixel pixel-text-sm font-black text-white transition-all hover:translate-y-[2px] active:translate-y-[4px] active:shadow-none ${topicCardGoShadow}`}
                   >
                     GO <TopicIcon name="play_arrow" className="text-sm" />
                   </Link>
                 ) : (
                   <span
-                    className={`relative flex w-full cursor-not-allowed items-center justify-center gap-2 bg-stone-600 py-3 px-6 font-headline-pixel text-[10px] font-black text-stone-300 ${topicCardGoShadow}`}
+                    className={`relative flex w-full cursor-not-allowed items-center justify-center gap-2 bg-stone-600 py-3 px-6 font-headline-pixel pixel-text-sm font-black text-stone-300 ${topicCardGoShadow}`}
                   >
                     GO <TopicIcon name="play_arrow" className="text-sm" />
                   </span>
@@ -196,7 +196,7 @@ export default function TopicsPage() {
                           onClick={() => {
                             if (isSoloTopicAreaId(t.id)) rerollSoloTopic(t.id);
                           }}
-                          className={`inline-flex items-center justify-center gap-1 border-2 border-tertiary bg-transparent px-3 py-2 font-headline-pixel text-[8px] font-black uppercase tracking-tight text-tertiary transition-all ${
+                          className={`inline-flex items-center justify-center gap-1 border-2 border-tertiary bg-transparent px-3 py-2 font-headline-pixel pixel-text-xs font-black uppercase tracking-tight text-tertiary transition-all ${
                             canReroll
                               ? "hover:bg-tertiary/10 active:translate-y-px"
                               : "cursor-not-allowed opacity-40"
@@ -225,7 +225,7 @@ export default function TopicsPage() {
                   <h2 className="mb-2 font-headline-pixel text-2xl font-black uppercase italic text-white">
                     EXCAVATE YOUR OWN
                   </h2>
-                  <p className="font-headline-pixel text-[10px] font-bold leading-relaxed text-stone-400">
+                  <p className="font-headline-pixel pixel-text-sm font-bold leading-relaxed text-stone-400">
                     Don&apos;t see a biome you like? Design your own debate topic
                     from scratch.
                   </p>
@@ -242,7 +242,7 @@ export default function TopicsPage() {
                     <input
                       name="title"
                       required
-                      className="font-headline-pixel w-full border-none bg-stone-800 p-4 font-bold text-[10px] text-white placeholder:text-stone-600 shadow-[inset_4px_4px_0px_0px_#000] focus:ring-4 focus:ring-tertiary"
+                      className="font-headline-pixel pixel-text-sm w-full border-none bg-stone-800 p-4 font-bold text-white placeholder:text-stone-600 shadow-[inset_4px_4px_0px_0px_#000] focus:ring-4 focus:ring-tertiary"
                       placeholder="ENTER TOPIC NAME..."
                       type="text"
                     />

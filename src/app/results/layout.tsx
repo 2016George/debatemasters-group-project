@@ -7,7 +7,7 @@ export default function ResultsLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="results-nether-bg relative min-h-screen overflow-x-hidden font-[family-name:var(--font-inter)] font-normal text-white antialiased">
+    <div className="results-nether-bg relative min-h-screen overflow-x-hidden font-app font-normal text-white antialiased">
       <div className="nether-haze-results" />
       <div className="crimson-particles" />
       <NetherSidebarShell sidebar={<OnboardingSidebar />}>

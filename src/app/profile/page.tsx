@@ -48,7 +48,7 @@ export default function ProfilePage() {
   );
 
   return (
-    <div className="results-nether-bg relative min-h-screen overflow-x-hidden font-[family-name:var(--font-inter)] text-white">
+    <div className="results-nether-bg relative min-h-screen overflow-x-hidden font-app text-white">
       <div className="nether-haze-results" />
       <div className="crimson-particles" />
       <NetherSidebarShell sidebar={<OnboardingSidebar />}>
@@ -100,7 +100,7 @@ export default function ProfilePage() {
                 </div>
               </div>
               <div className="border-2 border-[#2d5a24] bg-[#142214] p-3">
-                <div className="brick-sans mb-2 text-[10px] font-black uppercase tracking-widest text-[#7bdc6a]">
+                <div className="brick-sans pixel-text-sm mb-2 font-black uppercase tracking-widest text-[#7bdc6a]">
                   Experience bar
                 </div>
                 <div className="h-4 border-2 border-black bg-stone-950">
@@ -109,7 +109,7 @@ export default function ProfilePage() {
                     style={{ width: `${xpFillPct}%` }}
                   />
                 </div>
-                <div className="brick-sans mt-2 text-[10px] font-bold uppercase tracking-wide text-stone-500">
+                <div className="brick-sans pixel-text-sm mt-2 font-bold uppercase tracking-wide text-stone-500">
                   {xpBar.intoLevel} / {xpBar.xpForNextLevel} XP — {user.totalExperience} orbs total
                 </div>
               </div>
@@ -141,7 +141,7 @@ export default function ProfilePage() {
                         className="h-full w-full object-cover"
                       />
                     </div>
-                    <div className="brick-sans text-[10px] font-black uppercase tracking-wider text-white">
+                    <div className="brick-sans pixel-text-sm font-black uppercase tracking-wider text-white">
                       {avatar.label}
                     </div>
                   </button>

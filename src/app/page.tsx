@@ -63,7 +63,7 @@ export default function LandingPage() {
                 <div className="h-10 w-10 border-2 border-stone-900 bg-stone-700" />
                 <div className="h-10 w-10 border-2 border-stone-900 bg-stone-600" />
                 <div className="h-10 w-10 border-2 border-stone-900 bg-stone-500" />
-                <div className="flex h-10 w-10 items-center justify-center border-2 border-stone-900 bg-primary-container text-[10px] font-bold">
+                <div className="flex h-10 w-10 items-center justify-center border-2 border-stone-900 bg-primary-container pixel-text-sm font-bold">
                   +99
                 </div>
               </div>
@@ -89,7 +89,7 @@ export default function LandingPage() {
                   className="text-sm text-orange-600"
                   filled
                 />
-                <span className="pixel-text-xs text-[10px] font-bold uppercase tracking-widest text-stone-500">
+                <span className="pixel-text-xs font-bold uppercase tracking-widest text-stone-500">
                   Griefer-Free Zone
                 </span>
               </div>
@@ -125,7 +125,7 @@ export default function LandingPage() {
           <span className="pixel-text-base font-headline-pixel text-xl font-black text-stone-600">
             DEBATE MASTER
           </span>
-          <p className="pixel-text-xs mt-2 font-body text-[10px] uppercase tracking-[0.3em] text-stone-700 font-headline-pixel">
+          <p className="pixel-text-xs mt-2 uppercase tracking-[0.3em] text-stone-700 font-headline-pixel">
             © 2024 DEBATE MASTER - BUILT WITH BRICKS
           </p>
         </div>

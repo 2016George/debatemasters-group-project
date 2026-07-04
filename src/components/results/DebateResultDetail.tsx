@@ -6,12 +6,12 @@ import { downloadDebateTranscriptPdf } from "@/lib/pdf/transcript-pdf";
 import type { DebateResult } from "@/lib/data/types";
 
 const sans =
-  "font-[family-name:var(--font-inter)] antialiased text-pretty" as const;
+  "font-app antialiased text-pretty" as const;
 
 const topicTitleClass =
   "font-headline-pixel text-balance text-base font-black uppercase tracking-tight text-white drop-shadow-[3px_3px_0px_rgba(0,0,0,0.75)] !leading-[1.9] sm:text-lg sm:!leading-[2] md:text-xl md:!leading-[2.1]";
 
-/** Main hero on result page — topic only (Press Start / Minecraft-style pixel font). */
+/** Main hero on result page — topic title (Inter via font-headline-pixel). */
 function ResultTopicTitle({ topicTitle }: { topicTitle: string }) {
   return <h1 className={topicTitleClass}>{topicTitle}</h1>;
 }
@@ -91,7 +91,7 @@ export function DebateResultDetail({ r }: { r: DebateResult }) {
                     }}
                   />
                 </div>
-                <div className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-stone-500">
+                <div className="mt-1 pixel-text-xs font-semibold uppercase tracking-wide text-stone-500">
                   {r.xpCurrent} / {r.xpToNext} toward next level
                 </div>
               </div>

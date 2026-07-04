@@ -48,7 +48,7 @@ export default function ArenaSetupPage() {
   );
 
   return (
-    <div className="theme-nether-dark selection:bg-[#58B13E] selection:text-black relative min-h-screen overflow-x-hidden bg-[#1A0806] font-[family-name:var(--font-inter)] text-white">
+    <div className="theme-nether-dark selection:bg-[#58B13E] selection:text-black relative min-h-screen overflow-x-hidden bg-[#1A0806] font-app text-white">
       <NetherSidebarShell sidebar={<OnboardingSidebar />}>
         <main className="nether-bg-topics relative min-h-screen overflow-hidden">
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40" />

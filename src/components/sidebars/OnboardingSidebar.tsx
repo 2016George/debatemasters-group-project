@@ -99,7 +99,7 @@ export function OnboardingSidebar({
                 />
               </div>
               <div className="min-w-0">
-                <div className="brick-sans text-[10px] font-black uppercase tracking-wide text-stone-500">
+                <div className="brick-sans pixel-text-sm font-black uppercase tracking-wide text-stone-500">
                   Profile
                 </div>
                 <div className="brick-sans truncate text-xs font-black uppercase tracking-wide text-white">

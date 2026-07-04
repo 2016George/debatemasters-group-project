@@ -63,7 +63,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-full font-[family-name:var(--font-inter)]">
+      <body className="min-h-full font-app">
         {children}
       </body>
     </html>

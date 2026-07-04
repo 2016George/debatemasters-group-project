@@ -26,7 +26,7 @@ export default function OnboardingPage() {
   }, [age, agePreferenceLoaded]);
 
   return (
-    <div className="theme-nether-dark selection:bg-[#58B13E] selection:text-black relative min-h-screen overflow-x-hidden bg-[#1A0806] font-[family-name:var(--font-inter)] text-white nether-bg-onboarding">
+    <div className="theme-nether-dark selection:bg-[#58B13E] selection:text-black relative min-h-screen overflow-x-hidden bg-[#1A0806] font-app text-white nether-bg-onboarding">
       <NetherSidebarShell sidebar={<OnboardingSidebar />}>
         <main className="flex min-h-screen min-w-0 flex-col items-center px-4 py-10 sm:px-6 md:px-10 md:py-14 lg:px-12 lg:py-16 xl:px-14">
           <div className="grid w-full min-w-0 max-w-5xl grid-cols-1 items-start gap-10 md:gap-12 lg:grid-cols-12 xl:max-w-6xl 2xl:max-w-7xl">
@@ -112,7 +112,7 @@ export default function OnboardingPage() {
                       className="h-full w-full object-cover transition-all duration-300 group-hover:scale-105"
                       src="https://lh3.googleusercontent.com/aida-public/AB6AXuCOz0nb0F9sBtQJTHf1hP1K5C-U-GolTgBDro5RfUwF1bi_S-2yZ1fLYH9lsbamd1wwbYHdSJRKctAicC0uuF2QuQ1pzFV32yI-iJWQqavrQaeNiqhKFfzJapOuUct94eNIXK7j0IYfwMdJB9rxaZVDJUqyVG7cCSFUtBqkYTiLF5kLIic7BglV07mkzkTvUoss6UDPcv5rh0T29rWFwZTqwkC-6XWc8HkaFsq-nUvlgEBnhWc5uib5UhX12fqu8_CgJ6_cxLndQm9H"
                     />
-                    <div className="absolute right-2 top-2 bg-[#58B13E] px-2 py-1 text-[8px] font-black uppercase text-white brick-sans">
+                    <div className="absolute right-2 top-2 bg-[#58B13E] px-2 py-1 pixel-text-xs font-black uppercase text-white brick-sans">
                       Recommended
                     </div>
                   </div>
