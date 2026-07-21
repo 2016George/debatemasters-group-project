@@ -27,6 +27,7 @@ import {
   type ArenaRoomMessageRow,
 } from "@/lib/debate/use-arena-room-messages";
 import { isSupabaseConfigured } from "@/lib/supabase/browser-client";
+import { MicrophoneButton } from "@/components/MicrophoneButton";
 
 type WsdaChatRow =
   | { kind: "system"; key: string; at: string; text: string }
@@ -701,9 +702,9 @@ export function DebateChatPanel({
     appendTranscriptEntry,
   ]);
 
-  function postMessage() {
+  function postMessage(textOverride?: string) {
     if (inputLocked) return;
-    const text = draft.trim();
+    const text = (textOverride ?? draft).trim();
     if (!text) return;
 
     if (arenaRoomId && isSupabaseConfigured()) {
@@ -1070,6 +1071,12 @@ export function DebateChatPanel({
             rows={1}
           />
           <div className="flex shrink-0 gap-2">
+            <MicrophoneButton
+              onTranscription={(text) => {
+                postMessage(text);
+              }}
+              disabled={inputLocked}
+            />
             <button
               type="submit"
               disabled={inputLocked}
