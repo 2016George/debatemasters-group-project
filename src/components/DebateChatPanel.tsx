@@ -27,6 +27,9 @@ import {
   type ArenaRoomMessageRow,
 } from "@/lib/debate/use-arena-room-messages";
 import { isSupabaseConfigured } from "@/lib/supabase/browser-client";
+import { useStt } from "@/lib/stt/use-stt";
+import { useTts } from "@/lib/tts/use-tts";
+import { MaterialIcon } from "@/components/MaterialIcon";
 
 type WsdaChatRow =
   | { kind: "system"; key: string; at: string; text: string }
@@ -145,6 +148,9 @@ export function DebateChatPanel({
   const debateEndAnnouncedRef = useRef(false);
   const phaseIndexRef = useRef(phaseIndex);
   phaseIndexRef.current = phaseIndex;
+
+  const stt = useStt();
+  const tts = useTts();
 
   const isWsda =
     debateFormat === "wsda" &&
@@ -701,9 +707,37 @@ export function DebateChatPanel({
     appendTranscriptEntry,
   ]);
 
-  function postMessage() {
+  /* ---- STT transcription → auto-send on release -------------------- */
+  const sttTranscribedText = stt.transcribedText;
+  const sttReset = stt.reset;
+  useEffect(() => {
+    if (sttTranscribedText) {
+      sttReset();
+      postMessage(sttTranscribedText);
+    }
+  }, [sttTranscribedText, sttReset]);
+
+  /* ---- TTS: speak AI opponent replies in solo mode ----------------- */
+  const ttsSpeak = tts.speak;
+  useEffect(() => {
+    if (arenaRoomId) return;
+    const last = simOpponentPosts[simOpponentPosts.length - 1];
+    if (last?.text?.trim()) {
+      ttsSpeak(last.text);
+    }
+  }, [simOpponentPosts, arenaRoomId, ttsSpeak]);
+
+  /* ---- Stop TTS when user holds the mic ---------------------------- */
+  const ttsStop = tts.stop;
+  useEffect(() => {
+    if (stt.status === "recording") {
+      ttsStop();
+    }
+  }, [stt.status, ttsStop]);
+
+  function postMessage(textOverride?: string) {
     if (inputLocked) return;
-    const text = draft.trim();
+    const text = (textOverride ?? draft).trim();
     if (!text) return;
 
     if (arenaRoomId && isSupabaseConfigured()) {
@@ -1069,7 +1103,75 @@ export function DebateChatPanel({
             disabled={inputLocked}
             rows={1}
           />
-          <div className="flex shrink-0 gap-2">
+          <div className="flex shrink-0 items-center gap-2">
+            {/* ---- Recording indicator ---- */}
+            {stt.status === "recording" && (
+              <span className="flex items-center gap-1.5 px-2">
+                <span className="inline-block h-2.5 w-2.5 animate-pulse rounded-full bg-red-500 shadow-[0_0_6px_rgba(255,0,0,0.7)]" />
+                <span className="font-headline-pixel pixel-text-xs font-black text-red-400 tabular-nums">
+                  {(stt.elapsedMs / 1000).toFixed(0)}s
+                </span>
+              </span>
+            )}
+
+            {/* ---- Microphone button (hold to record, release to send) ---- */}
+            <button
+              type="button"
+              disabled={
+                stt.status === "processing" ||
+                (stt.status !== "recording" && inputLocked)
+              }
+              onPointerDown={(e) => {
+                e.preventDefault();
+                if (stt.status !== "recording") {
+                  void stt.startRecording();
+                }
+              }}
+              onPointerUp={(e) => {
+                e.preventDefault();
+                if (stt.status === "recording") {
+                  void stt.stopRecording();
+                }
+              }}
+              onPointerLeave={() => {
+                if (stt.status === "recording") {
+                  void stt.stopRecording();
+                }
+              }}
+              className={`font-headline-pixel border-b-4 px-3 py-2 text-white pixel-text-xs font-black uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)] transition-all enabled:active:translate-y-1 enabled:active:shadow-none disabled:cursor-not-allowed disabled:opacity-50 md:px-4 md:py-3 ${
+                stt.status === "recording"
+                  ? "border-red-800 bg-red-600"
+                  : stt.status === "processing"
+                    ? "border-stone-700 bg-stone-600 cursor-wait"
+                    : stt.status === "error"
+                      ? "border-red-900 bg-red-800 hover:bg-red-700"
+                      : "border-amber-900 bg-amber-700 hover:bg-amber-600"
+              }`}
+              aria-label={
+                stt.status === "recording"
+                  ? "Release to transcribe"
+                  : stt.status === "processing"
+                    ? "Transcribing…"
+                    : "Hold to record"
+              }
+            >
+              <MaterialIcon
+                name={
+                  stt.status === "recording"
+                    ? "mic"
+                    : stt.status === "processing"
+                      ? "sync"
+                      : stt.status === "error"
+                        ? "mic_off"
+                        : "mic_none"
+                }
+                className={
+                  stt.status === "processing" ? "animate-spin" : ""
+                }
+              />
+            </button>
+
+            {/* ---- POST button ---- */}
             <button
               type="submit"
               disabled={inputLocked}
@@ -1078,6 +1180,13 @@ export function DebateChatPanel({
               POST
             </button>
           </div>
+
+          {stt.status === "error" && stt.error && (
+            <p className="pixel-text-xs mt-2 border border-red-800 bg-red-950/80 px-3 py-1.5 text-red-300">
+              <MaterialIcon name="warning" className="mr-1 inline-block align-middle text-sm" />
+              {stt.error}
+            </p>
+          )}
         </form>
       </div>
     </div>
