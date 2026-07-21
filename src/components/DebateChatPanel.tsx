@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useTts } from "@/lib/hooks/use-tts";
 import { writeActiveDebateTranscript } from "@/lib/data/history-storage";
 import { pickOpponentSimLine } from "@/lib/debate/con-sim-lines";
 import {
@@ -27,6 +28,7 @@ import {
   type ArenaRoomMessageRow,
 } from "@/lib/debate/use-arena-room-messages";
 import { isSupabaseConfigured } from "@/lib/supabase/browser-client";
+import { MaterialIcon } from "@/components/MaterialIcon";
 import { MicrophoneButton } from "@/components/MicrophoneButton";
 
 type WsdaChatRow =
@@ -139,6 +141,7 @@ export function DebateChatPanel({
   const soloPhaseSpeechRef = useRef<Set<number>>(new Set());
   const crossExInitializedRef = useRef<Set<number>>(new Set());
   const soloOpponentAbortRef = useRef<AbortController | null>(null);
+  const prevUserCanPostRef = useRef(userCanPost);
   const scrollRef = useRef<HTMLDivElement>(null);
   const initializedTranscriptRef = useRef(false);
   const prevWsdaPhaseRef = useRef<number | null>(null);
@@ -163,6 +166,9 @@ export function DebateChatPanel({
       pickMinecraftAvatarBySeed(opponentName || "opponent"),
     [opponentAvatarUrlOverride, opponentName],
   );
+
+  const tts = useTts();
+  const lastPlayedOpponentIdRef = useRef(0);
 
   const setTranscriptEntries = useCallback(
     (entries: DebateTranscriptEntry[]) => {
@@ -662,6 +668,27 @@ export function DebateChatPanel({
     userRole,
   ]);
 
+  // Auto-play TTS for new AI opponent posts
+  useEffect(() => {
+    const lastPost = simOpponentPosts[simOpponentPosts.length - 1];
+    if (!lastPost) return;
+    if (lastPost.id <= lastPlayedOpponentIdRef.current) return;
+    lastPlayedOpponentIdRef.current = lastPost.id;
+    const textToSpeak = lastPost.text;
+    if (textToSpeak) {
+      tts.speak(textToSpeak);
+    }
+  }, [simOpponentPosts, tts]);
+
+  // Stop TTS when the user's turn starts
+  useEffect(() => {
+    const was = prevUserCanPostRef.current;
+    prevUserCanPostRef.current = userCanPost;
+    if (!was && userCanPost) {
+      tts.stop();
+    }
+  }, [userCanPost, tts]);
+
   const inputLocked =
     roundComplete ||
     !userCanPost ||
@@ -704,6 +731,7 @@ export function DebateChatPanel({
 
   function postMessage(textOverride?: string) {
     if (inputLocked) return;
+    tts.stop();
     const text = (textOverride ?? draft).trim();
     if (!text) return;
 
@@ -991,9 +1019,22 @@ export function DebateChatPanel({
                       />
                     </div>
                     <div className="max-w-[85%] border-2 border-tertiary/60 bg-[#0a1628]/90 p-4 shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)] backdrop-blur-md md:p-5">
-                      <span className="debate-chat-label mb-3 block text-tertiary-fixed">
-                        {opponentName} ({opponentRoleTag})
-                      </span>
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <span className="debate-chat-label text-tertiary-fixed">
+                          {opponentName} ({opponentRoleTag})
+                        </span>
+                        <button
+                          onClick={() => {
+                            tts.stop();
+                            tts.speak(row.text);
+                          }}
+                          className="inline-flex items-center gap-1 rounded border border-tertiary/30 px-1.5 py-0.5 text-xs text-tertiary-fixed/60 transition-colors hover:border-tertiary hover:text-tertiary-fixed"
+                          title="朗读回复 (Read aloud)"
+                          type="button"
+                        >
+                          <MaterialIcon name="volume_up" className="text-sm" />
+                        </button>
+                      </div>
                       <span
                         className={`mb-3 inline-flex border px-2 py-1 pixel-text-xs font-bold uppercase tracking-wide ${
                           row.usedFallback
