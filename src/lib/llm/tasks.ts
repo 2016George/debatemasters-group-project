@@ -104,13 +104,13 @@ function opponentOutputLimits(input: OpponentReplyRequest): {
     return { maxTokens: 600, maxChars: 0, trimIncomplete: false };
   }
   if (phaseIndex === 0 || phaseIndex === 2) {
-    return { maxTokens: 1400, maxChars: 0, trimIncomplete: false };
+    return { maxTokens: 500, maxChars: 0, trimIncomplete: true };
   }
   if (phaseIndex === 5 || phaseIndex === 6) {
-    return { maxTokens: 1000, maxChars: 0, trimIncomplete: false };
+    return { maxTokens: 500, maxChars: 0, trimIncomplete: true };
   }
   if (phaseIndex === 8 || phaseIndex === 9) {
-    return { maxTokens: 900, maxChars: 0, trimIncomplete: false };
+    return { maxTokens: 500, maxChars: 0, trimIncomplete: true };
   }
   if (phaseIndex === 1 || phaseIndex === 3) {
     if (input.crossExTurn === "ask") {
@@ -297,24 +297,24 @@ function wsdaOpponentTaskInstruction(input: OpponentReplyRequest): string {
   }
 
   if (phaseIndex === 0 || phaseIndex === 2) {
-    return "Deliver your constructive speech now, using the transcript above to respond to what the other side has argued.";
+    return "Deliver your constructive speech now, using the transcript above to respond to what the other side has argued. Keep your entire reply under 250 words — be concise, state your best 1-2 contentions only.";
   }
 
   if (phaseIndex === 5 || phaseIndex === 6) {
     if (userRole === "pro") {
       return (
         `Rebut arguments from "${WSDA_PHASES[0]?.label ?? "Pro Constructive"}" and ` +
-        `"${WSDA_PHASES[1]?.label ?? "Con Cross-Examination of the Pro"}" using the transcript above.`
+        `"${WSDA_PHASES[1]?.label ?? "Con Cross-Examination of the Pro"}" using the transcript above. Keep your entire rebuttal under 250 words.`
       );
     }
     return (
       `Rebut arguments from "${WSDA_PHASES[2]?.label ?? "Con Constructive"}" and ` +
-      `"${WSDA_PHASES[3]?.label ?? "Pro Cross-Examination of the Con"}" using the transcript above.`
+        `"${WSDA_PHASES[3]?.label ?? "Pro Cross-Examination of the Con"}" using the transcript above. Keep your entire rebuttal under 250 words.`
     );
   }
 
   if (phaseIndex === 8 || phaseIndex === 9) {
-    return "Deliver your conclusion speech now, using the full transcript above.";
+    return "Deliver your conclusion speech now, using the full transcript above. Keep your entire conclusion under 250 words.";
   }
 
   return "Provide the next persuasive response based on the transcript.";

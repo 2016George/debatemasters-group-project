@@ -94,7 +94,7 @@ const WSDA_CHAT_GUARDRAILS_COMMON =
   "OUTPUT FORMAT (typed WSDA chat, not oral speech): " +
   "Reply in one continuous post. You may use 2-4 short paragraphs separated by blank lines. " +
   "No markdown, no bullet points, no numbered lists, no prefacing. " +
-  "Write complete thoughts — do not trail off mid-sentence.";
+  "Write complete thoughts — do not trail off mid-sentence. Keep your entire reply under 250 words.";
 
 const WSDA_CHAT_GUARDRAILS_CONSTRUCTIVE =
   WSDA_CHAT_GUARDRAILS_COMMON +
