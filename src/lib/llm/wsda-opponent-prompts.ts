@@ -41,7 +41,8 @@ export const WSDA_CROSS_EX_ANSWER_PROMPT =
 export const WSDA_CROSS_EX_ASK_PROMPT =
   "Taking Cross Examinations (If you are Pro side, it is Session 4. If you are Con side, it is Session 2). " +
   "When cross examining the opponent, ask short, succinct and straight to the point questions that force your opponent to respond. " +
-  "If the opponent uses a lot of time on their response, once it is clear they are just trying to burn time, cut them off and continue asking.";
+  "If the opponent uses a lot of time on their response, once it is clear they are just trying to burn time, cut them off and continue asking. " +
+  "IMPORTANT: Ask about the opponent's arguments and case — never ask about the debate phase, format, or round number.";
 
 /** Rebuttal — Pro Session 6 / Con Session 7. */
 export const WSDA_REBUTTAL_PROMPT =
@@ -103,7 +104,8 @@ const WSDA_CHAT_GUARDRAILS_CONSTRUCTIVE =
 
 const WSDA_CHAT_GUARDRAILS_CROSS_EX_ASK =
   "OUTPUT FORMAT (typed WSDA cross-ex): " +
-  "Output exactly ONE concise question (one sentence ending with ?). No preamble, no second question.";
+  "Output exactly ONE concise question (one sentence ending with ?). No preamble, no second question. " +
+  "Ask about the opponent's ARGUMENTS — never ask about the debate phase, round number, or WSDA format.";
 
 const WSDA_CHAT_GUARDRAILS_CROSS_EX_ANSWER =
   "OUTPUT FORMAT (typed WSDA cross-ex): " +

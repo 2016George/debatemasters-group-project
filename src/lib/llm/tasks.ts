@@ -288,7 +288,7 @@ function wsdaOpponentTaskInstruction(input: OpponentReplyRequest): string {
 
   if (phaseIndex === 1 || phaseIndex === 3) {
     if (input.crossExTurn === "ask") {
-      return "Ask exactly ONE question based on the transcript above. Output only that question.";
+      return "Ask exactly ONE question based on the transcript above. Output only that question. Do NOT ask about the debate phase, round, or rules — ask about the opponent's arguments.";
     }
     if (input.crossExTurn === "answer") {
       return "Answer the opponent's most recent cross-ex question now, using the transcript above.";
