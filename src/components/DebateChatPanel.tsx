@@ -151,6 +151,8 @@ export function DebateChatPanel({
 
   const stt = useStt();
   const tts = useTts();
+  /** Which opponent message (by id) is currently being spoken, or null. */
+  const [speakingMsgId, setSpeakingMsgId] = useState<number | null>(null);
 
   const isWsda =
     debateFormat === "wsda" &&
@@ -717,15 +719,23 @@ export function DebateChatPanel({
     }
   }, [sttTranscribedText, sttReset]);
 
-  /* ---- TTS: speak AI opponent replies in solo mode ----------------- */
-  const ttsSpeak = tts.speak;
-  useEffect(() => {
-    if (arenaRoomId) return;
-    const last = simOpponentPosts[simOpponentPosts.length - 1];
-    if (last?.text?.trim()) {
-      ttsSpeak(last.text);
-    }
-  }, [simOpponentPosts, arenaRoomId, ttsSpeak]);
+  /* ---- TTS: click-to-speak handler for opponent messages ----------- */
+  const handleTtsClick = useCallback(
+    (msgId: number, text: string) => {
+      if (speakingMsgId === msgId) {
+        tts.stop();
+        setSpeakingMsgId(null);
+      } else {
+        tts.stop();
+        setSpeakingMsgId(msgId);
+        // speak returns a promise, but we don't await it in the click handler
+        tts.speak(text).finally(() => {
+          setSpeakingMsgId((current) => (current === msgId ? null : current));
+        });
+      }
+    },
+    [speakingMsgId, tts],
+  );
 
   /* ---- Stop TTS when user holds the mic ---------------------------- */
   const ttsStop = tts.stop;
@@ -1014,6 +1024,9 @@ export function DebateChatPanel({
                 );
               }
               if (row.kind === "opponent") {
+                const isSpeaking = speakingMsgId === row.id;
+                const ttsLoading = isSpeaking && tts.status === "loading";
+                const ttsPlaying = isSpeaking && tts.status === "playing";
                 return (
                   <div key={row.timelineKey} className="flex items-start gap-4">
                     <div className="h-12 w-12 flex-shrink-0 border-4 border-tertiary bg-tertiary/80 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)] md:h-14 md:w-14">
@@ -1027,15 +1040,34 @@ export function DebateChatPanel({
                       <span className="debate-chat-label mb-3 block text-tertiary-fixed">
                         {opponentName} ({opponentRoleTag})
                       </span>
-                      <span
-                        className={`mb-3 inline-flex border px-2 py-1 pixel-text-xs font-bold uppercase tracking-wide ${
-                          row.usedFallback
-                            ? "border-orange-700 bg-orange-950/60 text-orange-300"
-                            : "border-emerald-700 bg-emerald-950/60 text-emerald-300"
-                        }`}
-                      >
-                        {row.usedFallback ? "Fallback Reply" : "AI Reply"}
-                      </span>
+                      <div className="mb-3 flex flex-wrap items-center gap-2">
+                        <span
+                          className={`inline-flex border px-2 py-1 pixel-text-xs font-bold uppercase tracking-wide ${
+                            row.usedFallback
+                              ? "border-orange-700 bg-orange-950/60 text-orange-300"
+                              : "border-emerald-700 bg-emerald-950/60 text-emerald-300"
+                          }`}
+                        >
+                          {row.usedFallback ? "Fallback Reply" : "AI Reply"}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleTtsClick(row.id, row.text)}
+                          className={`inline-flex items-center justify-center border px-1.5 py-1 pixel-text-xs font-bold uppercase tracking-wide transition-all enabled:hover:opacity-80 enabled:active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 ${
+                            ttsPlaying
+                              ? "border-tertiary bg-tertiary/20 text-tertiary-fixed shadow-[0_0_8px_rgba(100,200,255,0.3)]"
+                              : "border-stone-600 bg-stone-800/60 text-stone-400 hover:text-stone-200"
+                          }`}
+                          aria-label={ttsPlaying ? "Stop speaking" : "Play as speech"}
+                          title={ttsPlaying ? "Stop" : "Play as speech"}
+                        >
+                          <MaterialIcon
+                            name={ttsLoading ? "sync" : "volume_up"}
+                            filled={ttsPlaying}
+                            className={ttsLoading ? "animate-spin text-sm" : "text-sm"}
+                          />
+                        </button>
+                      </div>
                       <p className="debate-chat-body max-w-prose whitespace-pre-wrap text-stone-100">
                         {row.text}
                       </p>
