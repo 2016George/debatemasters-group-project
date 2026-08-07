@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { buildLocalAiJudgedResult } from "@/lib/data/ai-results";
 import type { AgeBand, DebateResult, DebateTranscriptEntry, DebateResultScores } from "@/lib/data/types";
 import { judgeDebateAndFeedback, type JudgeDebateOutput } from "@/lib/llm/tasks";
@@ -137,10 +137,12 @@ async function persistArenaJudgement(input: {
     pro_quote: input.judge.pro.quote,
     pro_clarity_score: input.judge.pro.scores.clarity,
     pro_evidence_score: input.judge.pro.scores.evidence,
+    pro_wsda: input.judge.pro.scores.wsda ?? null,
     con_feedback: input.judge.con.feedback,
     con_quote: input.judge.con.quote,
     con_clarity_score: input.judge.con.scores.clarity,
     con_evidence_score: input.judge.con.scores.evidence,
+    con_wsda: input.judge.con.scores.wsda ?? null,
   };
   const { data, error } = await supabase.rpc("arena_store_judged_result", {
     p_room: input.arenaRoomId,
